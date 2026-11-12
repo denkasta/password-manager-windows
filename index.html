@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src data: blob:; script-src 'unsafe-inline'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Менеджер паролей</title>
+<style>
+:root{--bg:#1f1e1d;--panel:#262624;--card:#2d2c2a;--line:#3d3c39;--tx:#f0eee6;--mut:#9a978d;--dim:#6f6c64;--hov:#57554f;--acc:#d97757;--bad:#e5604d;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0}
+body{user-select:none;-webkit-user-select:none;font:14px -apple-system,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden}
+button{font:inherit;color:inherit;border:0;cursor:pointer;transition:.15s}
+button:focus{outline:none}button:focus-visible{outline:2px solid color-mix(in srgb,var(--acc) 40%,transparent);outline-offset:2px}
+input,textarea{user-select:text;-webkit-user-select:text;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;width:100%;outline:0;transition:.15s}
+input:focus,textarea:focus{border-color:var(--acc)}
+::placeholder{color:var(--dim)}
+.btn{position:relative;isolation:isolate;overflow:hidden;background:transparent;border:1px solid var(--acc);color:var(--acc);border-radius:6px;padding:11px 18px;font:600 12px var(--mono);letter-spacing:1.3px;text-transform:uppercase;transition:color .25s,transform .15s}
+.btn::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--acc);transform:scaleX(0);transform-origin:left;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.btn:hover{color:var(--bg)}.btn:hover::before{transform:scaleX(1)}
+.btn.ghost{border-color:var(--line);color:var(--tx)}.btn.ghost::before{background:var(--card)}.btn.ghost:hover{color:var(--tx)}
+.nm{display:flex;gap:12px;align-items:center}.nm .av{width:48px;height:48px;border-radius:12px}.nm .av svg{width:30px;height:30px}
+.lab{color:var(--mut);font:11px var(--mono);letter-spacing:.6px;text-transform:uppercase;margin-bottom:-4px}
+.head{flex-direction:column;align-items:stretch;gap:16px}.head .sub{margin-top:8px}.head .sub small{margin:0}
+.head .ht{text-align:center}.head .sub{justify-content:center}
+.hacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.hacts{width:100%}.hacts .btn{width:100%;justify-content:center;padding:10px 8px;white-space:nowrap}.head .sub small{white-space:nowrap}.head .sub small{margin:0}
+.btn.sm{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;font-size:11px;letter-spacing:1px}.btn.sm svg{width:14px;height:14px}
+.cp2{color:#8fbf7f!important}
+.two{display:flex;gap:8px}.two .btn{flex:1;min-width:0;padding-left:4px;padding-right:4px;gap:5px;font-size:10px;letter-spacing:.6px}.two .btn svg{width:14px;height:14px;flex:none}
+.langs{display:flex;flex-wrap:wrap;gap:8px}.btn.sm.on{border-color:var(--acc);color:var(--acc)}
+.themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.tcard{display:flex;height:66px;border-radius:8px;border:1px solid;overflow:hidden;padding:0;text-align:left;transition:transform .18s,box-shadow .18s}
+.tcard:hover{transform:translateY(-2px)}.tcard.on{box-shadow:0 0 0 2px var(--acc)}
+.tcard .tp{width:30%}.tcard .tb{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 12px}
+.tcard i{display:block;width:34px;height:6px;border-radius:3px}.tcard span{font:600 12px var(--mono);letter-spacing:.4px}
+.snap{animation:snap .5s cubic-bezier(.22,1,.36,1) backwards!important}
+@keyframes snap{from{opacity:0;transform:translateY(10px);filter:blur(5px)}}
+.isq{margin-bottom:-4px}.cap{height:16px;margin-top:-6px;color:var(--mut);font:11px var(--mono);letter-spacing:.7px;text-transform:uppercase}
+.pre{transition:transform .18s,border-color .18s,background .18s}.pre:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--acc) 55%,var(--line))}.pre.on{box-shadow:0 0 0 1px var(--acc)}
+.pre .x{position:absolute;top:-8px;right:-8px;width:20px;height:20px;padding:0;border-radius:50%;background:var(--bad);color:#fff;font-size:14px;line-height:1;display:grid;place-items:center;opacity:0;transform:scale(.7);transition:.15s;z-index:1}
+.pre:hover .x{opacity:1;transform:none}.pre .x:hover{filter:brightness(1.15)}
+.mbox{position:relative}
+.ownrow{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:8px;border-radius:10px;padding:2px;transition:background .15s}
+.fblk{border-radius:10px;padding:0 4px 4px;transition:background .15s}.drop{background:color-mix(in srgb,var(--acc) 12%,transparent);box-shadow:inset 0 0 0 1px var(--acc)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:8px;padding:2px 0 4px}
+.ftabs{display:flex;gap:6px;padding:12px 0 4px;border-top:1px solid var(--line);margin-top:6px}
+.ftab{background:none;border:1px solid var(--line);color:var(--mut);border-radius:6px;padding:6px 11px;font:600 10px var(--mono);letter-spacing:.8px;text-transform:uppercase}.ftab:hover{color:var(--tx)}.ftab.on{color:var(--acc);border-color:var(--acc)}.ftab small{color:var(--dim)}
+.pre img,.pre svg{pointer-events:none}
+.pk{grid-column:1/-1}
+.fcat{display:flex;align-items:center;gap:6px;color:var(--mut);font:11px var(--mono);letter-spacing:.8px;text-transform:uppercase;padding:10px 2px 6px}.fcat span{flex:1}.fcat small{color:var(--dim)}
+.fcat .gi{opacity:0;background:none;color:var(--mut);padding:3px;border-radius:5px;display:grid;transition:.15s}.fblk:hover .gi{opacity:1}.gi:hover{color:var(--tx);background:var(--card)}.gi.del:hover{color:var(--bad)}.gi svg{width:13px;height:13px}
+.gn{padding:6px 9px;font-size:12px}.fcat .gn{flex:1}.grow{display:flex;gap:8px;padding:10px 0 2px}.grow .btn{padding:6px 14px}
+.addcat{margin-top:10px;border:1px dashed var(--line);background:none;color:var(--mut);border-radius:8px;padding:9px;font:600 11px var(--mono);letter-spacing:1px;text-transform:uppercase;width:100%}.addcat:hover{color:var(--acc);border-color:var(--acc)}
+.tip{position:fixed;transform:translate(-50%,-100%) translateY(4px);background:var(--tx);color:var(--bg);font:600 11px var(--mono);letter-spacing:.5px;padding:4px 9px;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .15s,transform .15s;z-index:30;white-space:nowrap}
+.tip.on{opacity:1;transform:translate(-50%,-100%)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}.btn.danger::before{background:var(--bad)}.btn.danger:hover{color:#fff}
+.hide{display:none!important}
+svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+#lock{position:fixed;inset:0;display:grid;place-items:center;z-index:5;background:var(--bg);transition:opacity .3s}
+#lock.out{opacity:0;pointer-events:none}
+.lbox{width:340px;text-align:center;animation:up .4s}
+.logo{width:52px;height:52px;margin:0 auto 20px;border-radius:12px;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);color:var(--acc)}
+.logo svg{width:24px;height:24px}
+.lbox h1{font-size:20px;font-weight:600;margin-bottom:6px}.lbox p{color:var(--mut);margin-bottom:22px;line-height:1.4}
+.lbox input{margin-bottom:10px;text-align:center}.lbox .btn{width:100%;padding:11px}
+.pin{width:max-content;margin:0 auto;display:flex;align-items:center;gap:6px;transition:.15s}.pin .ic{flex:none}.cnt{display:block;margin-top:8px;text-align:right;font:600 12px var(--mono);color:var(--mut)}.cnt.ok{color:var(--acc)}.cnt[hidden]{display:none}
+.pin input{width:136px;border:0;background:none;box-shadow:none;padding:14px 0;font:600 22px var(--mono);letter-spacing:12px;text-align:left;caret-color:var(--acc);margin:0}.pin input:focus{border:0}
+input::-ms-reveal,input::-ms-clear{display:none} /* the browser's own eye: we draw ours */
+#ql{--i:0;display:flex;justify-content:center;gap:6px;margin:30px auto 0}
+.ql .th{display:none}
+.ql button{background:none;border:0;border-bottom:2px solid transparent;border-radius:0;color:var(--mut);font:700 13px var(--mono);letter-spacing:1px;padding:6px 12px;transition:color .2s,border-color .2s}.ql button:hover{color:var(--tx)}.ql button.on{color:var(--acc);border-bottom-color:var(--acc)}
+.pgo{width:100%;margin-top:14px;padding:11px}#pf{width:max-content;margin:0 auto}#pf .pgo{cursor:pointer;position:relative;isolation:isolate;overflow:hidden;background:transparent;color:var(--acc);border:1px solid var(--acc);border-radius:8px;font-size:15px;font-weight:600;font-family:inherit;letter-spacing:.2px;text-transform:none;transition:color .3s,transform .1s}#pf .pgo::before{content:'';position:absolute;inset:0;z-index:-1;background:var(--acc);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.22,1,.36,1)}#pf .pgo:hover{color:var(--bg)}#pf .pgo:hover::before{transform:scaleX(1)}#pf .pgo:active{transform:scale(.98)}#pf .pgo:disabled{animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.45}}
+.pin input.nm{font:600 20px var(--mono);letter-spacing:10px;width:calc(12 * (1ch + 10px));padding:8px 0 10px;text-align:left;border:0;border-radius:0;background:repeating-linear-gradient(90deg,var(--acc) 0 1ch,transparent 1ch calc(1ch + 10px)) 0 100%/calc(var(--n,0) * (1ch + 10px)) 3px no-repeat,repeating-linear-gradient(90deg,var(--line) 0 1ch,transparent 1ch calc(1ch + 10px)) 0 100%/100% 2px no-repeat;transition:background-size .35s cubic-bezier(.22,1,.36,1)}.pin input.nm:focus{caret-color:var(--acc)}.pin{position:relative}.ov{position:absolute;left:0;top:0;display:flex;padding:8px 0 10px;font:600 20px var(--mono);pointer-events:none;color:var(--tx)}.ov i{font-style:normal;display:block;width:1ch;margin-right:10px;text-align:center}.ov i.n{animation:chIn .28s cubic-bezier(.22,1,.36,1)}@keyframes chIn{from{opacity:0;transform:translateY(6px) scale(.6)}}#pi{color:transparent}
+.err{color:var(--bad);height:18px;margin-top:10px;font-size:13px}
+.shake{animation:shake .3s}
+.by{position:fixed;bottom:14px;left:0;right:0;text-align:center;font:11px var(--mono);color:var(--dim)}
+#app{display:grid;grid-template-columns:290px 1fr;height:100vh;animation:fade .3s}
+aside{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:20px 18px 14px;gap:12px;min-height:0}
+.brand{font:600 14px var(--mono);display:flex;gap:10px;align-items:center;padding:0 6px}
+.brand svg{color:var(--acc)}
+@keyframes ring{0%,40%,100%{transform:rotate(0)}8%{transform:rotate(14deg)}16%{transform:rotate(-12deg)}24%{transform:rotate(8deg)}32%{transform:rotate(-5deg)}}
+#sites{position:relative;overflow:auto;flex:1;display:flex;flex-direction:column;gap:2px}
+.site{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:8px;background:none;text-align:left;width:100%;transition:background .2s}
+.site.in{animation:up .3s both}#sites.dragging{cursor:grabbing;user-select:none}#sites.dragging .site{transition:transform .22s cubic-bezier(.2,.8,.2,1),background .2s}.site.drag{position:relative;z-index:5;background:var(--card);box-shadow:0 10px 28px #0006;transition:box-shadow .2s!important}.site.drag.settle{transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s!important}
+.site:hover{background:var(--card)}.site.on{background:color-mix(in srgb,var(--acc) 12%,transparent)}.site.on b{color:var(--acc)}
+.av{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;font-weight:700;font-size:16px;color:#fff;flex:none;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.av.cu img{transform:scale(1.13)} /* own icons: crop the light fringe at the edges */
+.av svg{width:24px;height:24px;stroke:none;fill:currentColor}
+.site b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.site small{color:var(--mut);font-size:12px}
+.site div{min-width:0}
+.zrow{display:flex;align-items:center;justify-content:center;gap:9px;color:var(--mut);font-family:var(--mono);padding-top:2px}
+#zm{width:110px;margin:0;-webkit-appearance:none;appearance:none;height:3px;padding:0;border:0;border-radius:2px;background:linear-gradient(to right,var(--acc) var(--p,0%),var(--line) var(--p,0%));cursor:pointer}#zm::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:14px;border-radius:3px;background:var(--acc);box-shadow:0 0 0 3px var(--bg)}
+.foot{display:flex;flex-direction:column;gap:8px}.foot button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px}
+.sign{text-align:center;font:11px var(--mono);color:var(--dim);padding-top:2px}
+.ab{display:grid;gap:2px;margin-bottom:12px}.ab b{font:600 11px var(--mono);letter-spacing:.8px;text-transform:uppercase;color:var(--acc)}.ab span{color:var(--mut);line-height:1.45;font-size:13px}
+main{padding:28px 36px;overflow-y:auto;overflow-x:hidden}
+.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.head .av{width:46px;height:46px;border-radius:11px}.head .av svg{width:30px;height:30px}
+.head .ht{min-width:0}.head h2{font-size:30px;font-weight:700;letter-spacing:-.6px;line-height:1.1;color:var(--tx);overflow-wrap:anywhere}
+.head small{display:block;margin-top:6px;color:var(--acc);font:12px var(--mono);letter-spacing:.8px;text-transform:uppercase}
+.acc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:6px;animation:fade .25s both;transition:border-color .15s}
+.acc:hover{border-color:var(--hov)}
+.acc .f{flex:1;min-width:0}.acc label{display:block;color:var(--mut);font:11px var(--mono);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.acc .v{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:10px}.acc .v:last-child{margin:0}
+.acc .note{color:var(--acc);white-space:pre-wrap}
+.pw{font-family:var(--mono);letter-spacing:.5px}
+.acts{display:flex;gap:2px;padding:3px;background:var(--bg);border:1px solid var(--line);border-radius:8px;flex:none}
+#view{max-width:720px;margin:0 auto}
+.acts .ic:hover{background:var(--card)}
+#ms{padding:10px 12px}#ms .av{width:44px;height:44px;border-radius:11px}#ms .av svg{width:28px;height:28px}
+.btn:active{transform:scale(.96)}.ic:active{transform:scale(.93)}
+.av.ph{background:color-mix(in srgb,var(--acc) 16%,var(--card));color:var(--acc);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 35%,transparent)} /* no icon: follows the theme colours */
+.av{transition:transform .2s}.site:hover .av,.pre:hover .av{transform:scale(1.08)}
+.head{animation:fade .25s both}.ic svg{transition:transform .15s}.ic:hover svg{transform:scale(1.15)}
+.acc:hover{box-shadow:0 8px 22px #0006}.ic.ok{color:#8fbf7f;background:var(--bg)}
+@keyframes pulse{50%{transform:scale(1.08);box-shadow:0 0 0 8px color-mix(in srgb,var(--acc) 13%,transparent)}}
+.num{font:700 12px var(--mono);color:var(--acc);width:26px;height:26px;border-radius:50%;background:color-mix(in srgb,var(--acc) 14%,transparent);display:grid;place-items:center;flex:none}
+.acc .note{cursor:pointer}.acc .note:hover{text-decoration:underline}
+.wide{width:520px}
+.prev{display:flex;gap:14px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px}
+.prev .av{width:64px;height:64px;border-radius:16px}.prev .av svg{width:34px;height:34px}.prev small{display:block;color:var(--mut);margin-top:2px}
+.presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:8px;max-height:330px;overflow-y:auto;padding:9px;scrollbar-gutter:stable}
+.pre{position:relative;cursor:pointer;display:grid;place-items:center;padding:8px;border-radius:8px;background:none;border:1px solid var(--line);text-align:left;min-width:0}
+.pre:hover{background:var(--card)}.pre.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.pre.up{border-style:dashed;color:var(--mut);min-height:58px}.pre.up:hover{color:var(--acc);border-color:var(--acc)}.pre.up svg{width:22px;height:22px}
+.pre .av{width:42px;height:42px;border-radius:11px}.pre .av svg{width:24px;height:24px}
+.ic{width:34px;height:34px;border-radius:6px;background:none;color:var(--mut);display:grid;place-items:center}.ic:hover{background:var(--bg);color:var(--tx)}.ic.del:hover{color:var(--bad)}
+.acts{gap:6px;padding:0;background:none;border:0;border-radius:0}
+.acts .ic{width:32px;height:32px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--mut);transition:border-color .15s,color .15s,background .15s,transform .12s}
+.acts .ic svg{width:15px;height:15px}
+.acts .ic:hover{border-color:var(--acc);color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,transparent)}
+.acts .ic.del:hover{border-color:var(--bad);color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,transparent)}
+.acts .ic:active{transform:scale(.92)}
+.acts .ic.ok{border-color:#8fbf7f;color:#8fbf7f;background:color-mix(in srgb,#8fbf7f 10%,transparent)}
+.empty{text-align:center;color:var(--mut);margin-top:14vh;animation:up .4s}.empty h2{color:var(--tx);font-weight:600;margin-bottom:6px}
+#modal,.modal{position:fixed;inset:0;background:#0009;display:grid;place-items:center;z-index:4;animation:fade .15s}
+.mbox{width:420px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;animation:mup .32s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;gap:12px}
+@keyframes mup{from{opacity:0;transform:translateY(16px) scale(.97)}}
+.pwr{position:relative}.pwr input{padding-right:44px}.pwr .eyeb{position:absolute;right:4px;top:50%;transform:translateY(-50%)}
+.mbox h3{font-size:20px;font-weight:700;letter-spacing:-.3px}.row{display:flex;gap:8px}.row .ic{height:41px;width:44px;flex:none;border:1px solid var(--line)}
+#wt{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}#wt b{display:block;margin:6px 0 2px;font-size:14px}#wt p{color:var(--mut);font-size:13px;line-height:1.4;margin:0 0 10px}#wt p{margin:0}
+.nh{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:12px}.nh svg{width:15px;height:15px;color:var(--acc);fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.nh small{margin-left:auto;color:var(--dim)}
+#wt{position:fixed;right:16px;bottom:16px;width:320px;z-index:9;box-shadow:0 14px 40px #0008;transform:translateX(120%);transition:transform .4s cubic-bezier(.2,.8,.2,1);cursor:pointer}#wt.on{transform:none}
+.wx{margin-left:auto;background:none;border:0;color:var(--mut);font-size:17px;line-height:1;padding:0 2px}.wx:hover{color:var(--tx)}
+#toast{position:fixed;left:50%;bottom:20px;background:var(--card);color:var(--tx);border:1px solid var(--line);box-shadow:0 14px 40px #0008;font-weight:500;padding:11px 16px;border-radius:10px;opacity:0;transform:translate(-50%,14px);transition:.3s cubic-bezier(.2,.8,.2,1);z-index:9;pointer-events:none}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+</style></head><body>
+
+<div id="lock" class="hide"><div class="lbox">
+  <div class="logo"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
+  <h1 id="lt">Менеджер паролей</h1><p id="lp"></p>
+  <form id="pf" class="hide"><div class="pin"><input id="pi" class="nm" maxlength="12" type="password" autocomplete="off" spellcheck="false"><button type="button" class="ic eyeb" tabindex="-1" title="Показать"></button></div><span class="cnt" id="pc"></span><div class="err" id="pe"></div><button class="btn pgo" id="pgo">OK</button></form>
+  <div class="ql" id="ql"></div>
+</div><div class="by">создал denkasta</div></div>
+<div id="app" class="hide">
+  <aside>
+    <div class="brand"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>Менеджер паролей</div>
+    <input id="q" placeholder="Поиск сайта или логина">
+    <div id="sites"></div>
+    <div class="foot"><button class="btn" id="addSec">Новый раздел</button><div class="two"><button class="btn ghost" id="pdf"></button><button class="btn ghost" id="imp"></button><button class="btn ghost" id="thb"></button></div><div class="zrow"><span style="font-size:10px">A</span><input type="range" id="zm" min="1" max="1.6" step="0.05" value="1" title="Масштаб"><span style="font-size:15px">A</span></div><button type="button" class="btn ghost sm" id="aboutb"></button></div>
+    <div class="sign">создал denkasta</div>
+  </aside>
+  <main><div id="view"></div></main>
+</div>
+
+<div id="modal" class="hide"><form class="mbox" id="mf">
+  <h3 id="mt">Новый аккаунт</h3>
+  <div class="prev" id="ms"></div>
+  <input id="fl" placeholder="Логин или почта" required autocomplete="off">
+  <div class="row"><input id="fp" type="password" placeholder="Пароль" required autocomplete="off"><button type="button" class="ic" id="feye" title="Показать пароль"></button><button type="button" class="ic" id="gen" title="Сгенерировать"></button></div>
+  <textarea id="fn" rows="2" placeholder="Заметка (необязательно)"></textarea>
+  <div class="row"><button type="button" class="btn ghost" id="mc" style="flex:1">Отмена</button><button class="btn" style="flex:1">Сохранить</button></div>
+</form></div>
+<div id="sec" class="modal hide"><form class="mbox wide" id="sf"><h3>Новый раздел</h3>
+  <div class="nm"><div id="sp"></div><input id="sn" placeholder="Название, например Discord" required autocomplete="off"></div>
+  <div class="lab">Иконка (необязательно)</div>
+  <input class="isq" placeholder="Найти иконку" autocomplete="off"><div class="presets" id="pl"></div><input type="file" id="sfile" accept=".ico" hidden>
+  <div class="row"><button type="button" class="btn ghost" id="sc" style="flex:1">Отмена</button><button class="btn" style="flex:1">Создать</button></div></form></div>
+<div id="ico" class="modal hide"><div class="mbox wide"><h3 id="it"></h3><input class="isq" placeholder="Найти иконку" autocomplete="off"><div class="presets" id="il"></div>
+  <div class="row"><button class="btn ghost" id="ir" style="flex:1">Сбросить</button><button class="btn ghost" id="ix" style="flex:1">Закрыть</button></div></div></div>
+<div id="ask" class="modal hide"><div class="mbox" style="width:380px"><h3 id="at"></h3><p id="ap" style="color:var(--mut);margin-top:-4px;word-break:break-all"></p>
+  <div class="row"><button class="btn ghost" id="an" style="flex:1">Отмена</button><button class="btn danger" id="ay" style="flex:1">Удалить</button></div></div></div>
+<div id="thm" class="modal hide"><div class="mbox wide"><h3>Тема и язык</h3><div class="lab">Тема</div><div class="themes" id="tl"></div><div class="lab">Язык</div><div class="langs" id="ll"></div>
+  <div class="row"><button type="button" class="btn ghost" id="tx" style="flex:1">Закрыть</button></div></div></div>
+<div id="pw" class="modal hide"><form class="mbox" id="pwf" style="width:380px"><h3>Пароль для бэкапа</h3>
+  <input id="pwi" type="password" minlength="12" maxlength="12" required autocomplete="off" placeholder="Пароль (12 символов)">
+  <div class="row"><button type="button" class="btn ghost" id="pwc" style="flex:1">Отмена</button><button class="btn" style="flex:1">Сохранить</button></div></form></div>
+<div id="ipw" class="modal hide"><form class="mbox" id="ipf" style="width:380px"><h3 id="ipt">Пароль архива</h3><p style="color:var(--mut);margin-top:-4px;line-height:1.4">Введите пароль, который вы задали при создании бэкапа.</p>
+  <input id="ipi" type="password" required autocomplete="off" placeholder="Пароль">
+  <div class="row"><button type="button" class="btn ghost" id="ipc" style="flex:1">Отмена</button><button class="btn" style="flex:1">Открыть</button></div></form></div>
+<div id="cpw" class="modal hide"><form class="mbox" id="cpf" style="width:360px"><h3>Новый мастер-пароль</h3>
+  <div class="pin" style="margin:0 0 12px"><input id="cpi" class="nm" maxlength="12" type="password" autocomplete="off" spellcheck="false"><button type="button" class="ic eyeb" tabindex="-1" title="Показать"></button></div>
+  <div class="row"><button type="button" class="btn ghost" id="cpc" style="flex:1">Отмена</button><button class="btn" style="flex:1">Сохранить</button></div></form></div>
+<div id="abt" class="modal hide"><div class="mbox" style="width:440px"><h3>О приложении</h3>
+  <div class="ab"><b>Менеджер паролей</b><span>Офлайн-программа, версия 1.0. Работает без интернета: пароли никуда не отправляются.</span></div>
+  <div class="ab"><b>Хранилище</b><span>Шифруется AES-256-GCM. Ключ получается из вашего мастер-пароля (Argon2id) и нигде не хранится: без пароля файл не открыть, даже с другого компьютера или с загрузочной флешки.</span></div>
+  <div class="ab"><b>Мастер-пароль</b><span>Забытый пароль восстановить нельзя: храните бэкап и запомните пароль. <a href="#" id="cpl">Сменить мастер-пароль</a></span></div>
+  <div class="ab"><b>Бэкап</b><span>ZIP-архив с шифрованием AES-256 и вашим паролем (12 символов). Внутри текст для чтения и файл для восстановления.</span></div>
+  <div class="ab"><b>Буфер обмена</b><span>Скопированный пароль очищается через 30 секунд.</span></div>
+  <div class="row"><button type="button" class="btn ghost" id="abx" style="flex:1">Закрыть</button></div></div></div>
+<div id="wt"></div>
+<div id="toast"></div>
+
+<script>
+const $=s=>document.getElementById(s);
+const THEMES={
+ terra:{n:'Терракота',v:{'--bg':'#1f1e1d','--panel':'#262624','--card':'#2d2c2a','--line':'#3d3c39','--tx':'#f0eee6','--mut':'#9a978d','--dim':'#6f6c64','--hov':'#57554f','--acc':'#d97757','--bad':'#e5604d'}},
+ blue:{n:'Полночь',v:{'--bg':'#1a1b26','--panel':'#1f2335','--card':'#262b40','--line':'#363c58','--tx':'#d5daf5','--mut':'#8089b3','--dim':'#565f89','--hov':'#4a5278','--acc':'#7aa2f7','--bad':'#f7768e'}},
+ emerald:{n:'Лес',v:{'--bg':'#0f1a17','--panel':'#14221e','--card':'#1b2e28','--line':'#27453b','--tx':'#e3f1ea','--mut':'#86ab9a','--dim':'#5a7d6e','--hov':'#40675a','--acc':'#3fcf8e','--bad':'#f87171'}},
+ violet:{n:'Сумерки',v:{'--bg':'#191724','--panel':'#1f1d2e','--card':'#272439','--line':'#3a3652','--tx':'#e0def4','--mut':'#908caa','--dim':'#6e6a86','--hov':'#524f67','--acc':'#c4a7e7','--bad':'#eb6f92'}},
+ rose:{n:'Закат',v:{'--bg':'#1c1417','--panel':'#251a1f','--card':'#30212a','--line':'#47303b','--tx':'#f5e6ea','--mut':'#b79aa4','--dim':'#85666f','--hov':'#64444f','--acc':'#f5829b','--bad':'#ff6b6b'}},
+ sand:{n:'Светлая',v:{'--bg':'#faf9f5','--panel':'#f0eee6','--card':'#ffffff','--line':'#e1ddd0','--tx':'#1f1e1d','--mut':'#6b6860','--dim':'#9c988d','--hov':'#bdb8aa','--acc':'#c96442','--bad':'#c0392b'}}};
+
+const LANGS={ru:'Русский',en:'English',uk:'Українська',pl:'Polski'};
+// Source language is Russian: keys are the Russian strings, DICT holds the other languages.
+const DICT={
+en:{'Менеджер паролей':'Password Manager','создал denkasta':'created by denkasta',
+'Поиск сайта или логина':'Search site or login','Новый раздел':'New section','Тема':'Theme','Новый аккаунт':'New account','Изменить аккаунт':'Edit account',
+'Логин или почта':'Login or email','Пароль':'Password','Заметка (необязательно)':'Note (optional)','Показать пароль':'Show password','Сгенерировать':'Generate',
+'Отмена':'Cancel','Сохранить':'Save','Создать':'Create','Сбросить':'Reset','Закрыть':'Close','Удалить':'Delete',
+'Название, например Discord':'Name, e.g. Discord','Иконка (необязательно)':'Icon (optional)','Тема и язык':'Theme & language','Язык':'Language',
+'Терракота':'Terracotta','Светлая':'Light',
+'Раздел':'Section','Логин':'Login','Заметка':'Note','Копировать логин':'Copy login','Копировать пароль':'Copy password','Показать':'Show','Изменить':'Edit','Нажмите, чтобы скопировать':'Click to copy',
+'{n} акк.':'{n} acc.','Аккаунтов: {n}':'Accounts: {n}','Пока нет аккаунтов':'No accounts yet','В этом разделе пока нет аккаунтов':'No accounts in this section yet',
+'Сменить иконку':'Change icon','Удалить раздел':'Delete section','Добавить аккаунт':'Add account','Добавить раздел':'Add section',
+'Ничего не найдено':'Nothing found','Пока пусто':'Nothing here yet','Измените запрос':'Change your search','Создайте первый раздел':'Create your first section',
+'Скопировано':'Copied','Сохранено':'Saved','Раздел добавлен':'Section added','Нечего экспортировать':'Nothing to export','Нужен файл .ico':'An .ico file is required','Не удалось открыть картинку':'Could not open the image','Не удалось сохранить! Проверьте доступ к папке данных':'Could not save! Check access to the data folder',
+'Удалить аккаунт?':'Delete account?','Удалить раздел «{n}»?':'Delete section “{n}”?','Вместе с ним удалятся аккаунты: {n}':'Accounts deleted with it: {n}','В разделе нет аккаунтов':'The section has no accounts',
+'Иконка раздела «{n}»':'Icon for section “{n}”','Своя иконка (.ico)':'Own icon (.ico)','Ошибка':'Error','Не удалось открыть хранилище':'Could not open the vault',
+'Переименовать':'Rename','Добавить':'Add','Мои':'Mine','Игры':'Games','Соцсети':'Social','Сервисы':'Services','Финансы':'Finance','Мои':'Mine','Рекомендуемые':'Recommended','Новая группа':'New group','Название группы':'Group name','Пока пусто. Нажмите «+», чтобы добавить свою иконку.':'Nothing here yet. Press “+” to add your own icon.','Документы':'Documents','Слишком простой пароль':'Password is too simple','Придумайте мастер-пароль':'Create a master password','Повторите мастер-пароль':'Repeat the master password','Введите мастер-пароль':'Enter the master password','Ровно 12 символов. Забудете его — пароли не восстановить, помогут только бэкапы.':'Exactly 12 characters. If you forget it, passwords cannot be recovered; only backups help.','Нужно от 16 символов':'16+ characters required','Нужно от 12 символов':'12+ characters required','Пароли не совпадают':'Passwords do not match','Неверный мастер-пароль':'Wrong master password','Новый мастер-пароль':'New master password','Мастер-пароль изменён':'Master password changed','Не удалось сменить пароль':'Could not change the password','Мастер-пароль':'Master password','Сменить мастер-пароль':'Change master password','Шифруется AES-256-GCM. Ключ получается из вашего мастер-пароля (Argon2id) и нигде не хранится: без пароля файл не открыть, даже с другого компьютера или с загрузочной флешки.':'Encrypted with AES-256-GCM. The key is derived from your master password (Argon2id) and is never stored: without the password the file cannot be opened, even from another computer or a boot USB stick.','Забытый пароль восстановить нельзя: храните бэкап и запомните пароль. ':'A forgotten password cannot be recovered: keep a backup and remember the password. ','ещё не было':'none yet','Показать в папке':'Show in folder','Пароль для бэкапа':'Backup password','Сохранить':'Save','Бэкап':'Backup','Бэкап сохранён. Перенесите файл с этого компьютера: здесь его могут взять':'Backup saved. Move the file off this computer: someone with access to it can take it','Не удалось сохранить бэкап':'Could not save the backup','Импорт':'Import','Пароль архива':'Archive password','Неверный пароль, ещё раз':'Wrong password, try again','Введите пароль, который вы задали при создании бэкапа.':'Enter the password you set when the backup was made.','Открыть':'Open','Не удалось открыть файл':'Could not open the file','Импорт завершён':'Import finished','Нечего импортировать':'Nothing to import','Добавлено':'Added','пропущено дублей':'duplicates skipped','Войти':'Sign in','Далее':'Next','Создать':'Create','ПИН-код':'PIN','Полночь':'Midnight','Лес':'Forest','Сумерки':'Dusk','Закат':'Sunset','Изменить ПИН-код':'Change PIN','Пароль (12 символов)':'Password (12 characters)','Нужно от 12 символов':'12 characters or more','О приложении':'About','Менеджер паролей':'Password Manager','Офлайн-программа, версия 1.0. Работает без интернета: пароли никуда не отправляются.':'An offline program, version 1.0. It works without the internet: passwords are never sent anywhere.','Хранилище':'Vault','Шифруется средствами системы. Ключ защищён самой системой (Windows или macOS): открыть хранилище может только ваша учётная запись.':'Encrypted by the operating system. The key is protected by Windows or macOS itself: only your account can open the vault.','ПИН-код':'PIN','Закрывает вход в приложение. Сами файлы он не шифрует.':'Locks entry to the app. It does not encrypt the files themselves.','Бэкап':'Backup','ZIP-архив с шифрованием AES-256 и вашим паролем (12 символов). Внутри текст для чтения и файл для восстановления.':'A ZIP archive encrypted with AES-256 and your password (12+ characters). Inside: a text file to read and a file to restore from.','Буфер обмена':'Clipboard','Скопированный пароль очищается через 30 секунд.':'A copied password is cleared after 30 seconds.','Закрыть':'Close','Найти иконку':'Find an icon','Мои пароли':'My passwords',},
+uk:{'Менеджер паролей':'Менеджер паролів','создал denkasta':'створив denkasta',
+'Поиск сайта или логина':'Пошук сайту або логіна','Новый раздел':'Новий розділ','Тема':'Тема','Новый аккаунт':'Новий акаунт','Изменить аккаунт':'Змінити акаунт',
+'Логин или почта':'Логін або пошта','Пароль':'Пароль','Заметка (необязательно)':'Нотатка (необов’язково)','Показать пароль':'Показати пароль','Сгенерировать':'Згенерувати',
+'Отмена':'Скасувати','Сохранить':'Зберегти','Создать':'Створити','Сбросить':'Скинути','Закрыть':'Закрити','Удалить':'Видалити',
+'Название, например Discord':'Назва, наприклад Discord','Иконка (необязательно)':'Іконка (необов’язково)','Тема и язык':'Тема і мова','Язык':'Мова',
+'Терракота':'Теракота','Светлая':'Світла',
+'Раздел':'Розділ','Логин':'Логін','Заметка':'Нотатка','Копировать логин':'Копіювати логін','Копировать пароль':'Копіювати пароль','Показать':'Показати','Изменить':'Змінити','Нажмите, чтобы скопировать':'Натисніть, щоб скопіювати',
+'{n} акк.':'{n} акк.','Аккаунтов: {n}':'Акаунтів: {n}','Пока нет аккаунтов':'Поки немає акаунтів','В этом разделе пока нет аккаунтов':'У цьому розділі поки немає акаунтів',
+'Сменить иконку':'Змінити іконку','Удалить раздел':'Видалити розділ','Добавить аккаунт':'Додати акаунт','Добавить раздел':'Додати розділ',
+'Ничего не найдено':'Нічого не знайдено','Пока пусто':'Поки порожньо','Измените запрос':'Змініть запит','Создайте первый раздел':'Створіть перший розділ',
+'Скопировано':'Скопійовано','Сохранено':'Збережено','Раздел добавлен':'Розділ додано','Нечего экспортировать':'Нічого експортувати','Нужен файл .ico':'Потрібен файл .ico','Не удалось открыть картинку':'Не вдалося відкрити зображення','Не удалось сохранить! Проверьте доступ к папке данных':'Не вдалося зберегти! Перевірте доступ до папки даних',
+'Удалить аккаунт?':'Видалити акаунт?','Удалить раздел «{n}»?':'Видалити розділ «{n}»?','Вместе с ним удалятся аккаунты: {n}':'Разом із ним буде видалено акаунтів: {n}','В разделе нет аккаунтов':'У розділі немає акаунтів',
+'Иконка раздела «{n}»':'Іконка розділу «{n}»','Своя иконка (.ico)':'Власна іконка (.ico)','Ошибка':'Помилка','Не удалось открыть хранилище':'Не вдалося відкрити сховище',
+'Переименовать':'Перейменувати','Добавить':'Додати','Мои':'Мої','Игры':'Ігри','Соцсети':'Соцмережі','Сервисы':'Сервіси','Финансы':'Фінанси','Мои':'Мої','Рекомендуемые':'Рекомендовані','Новая группа':'Нова група','Название группы':'Назва групи','Пока пусто. Нажмите «+», чтобы добавить свою иконку.':'Поки порожньо. Натисніть «+», щоб додати свою іконку.','Документы':'Документи','Слишком простой пароль':'Занадто простий пароль','Придумайте мастер-пароль':'Придумайте майстер-пароль','Повторите мастер-пароль':'Повторіть майстер-пароль','Введите мастер-пароль':'Введіть майстер-пароль','Ровно 12 символов. Забудете его — пароли не восстановить, помогут только бэкапы.':'Рівно 12 символів. Забудете його — паролі не відновити, допоможуть лише бекапи.','Нужно от 16 символов':'Потрібно від 16 символів','Нужно от 12 символов':'Потрібно від 12 символів','Пароли не совпадают':'Паролі не збігаються','Неверный мастер-пароль':'Невірний майстер-пароль','Новый мастер-пароль':'Новий майстер-пароль','Мастер-пароль изменён':'Майстер-пароль змінено','Не удалось сменить пароль':'Не вдалося змінити пароль','Мастер-пароль':'Майстер-пароль','Сменить мастер-пароль':'Змінити майстер-пароль','Шифруется AES-256-GCM. Ключ получается из вашего мастер-пароля (Argon2id) и нигде не хранится: без пароля файл не открыть, даже с другого компьютера или с загрузочной флешки.':'Шифрується AES-256-GCM. Ключ виводиться з вашого майстер-пароля (Argon2id) і ніде не зберігається: без пароля файл не відкрити, навіть з іншого комп’ютера чи завантажувальної флешки.','Забытый пароль восстановить нельзя: храните бэкап и запомните пароль. ':'Забутий пароль відновити не можна: зберігайте бекап і запам’ятайте пароль. ','ещё не было':'ще не було','Показать в папке':'Показати в папці','Пароль для бэкапа':'Пароль для бекапа','Бэкап':'Бекап','Бэкап сохранён. Перенесите файл с этого компьютера: здесь его могут взять':'Бекап збережено. Перенесіть файл з цього комп’ютера: тут його можуть забрати','Не удалось сохранить бэкап':'Не вдалося зберегти бекап','Импорт':'Імпорт','Пароль архива':'Пароль архіву','Неверный пароль, ещё раз':'Невірний пароль, ще раз','Введите пароль, который вы задали при создании бэкапа.':'Введіть пароль, який ви задали під час створення бекапу.','Открыть':'Відкрити','Не удалось открыть файл':'Не вдалося відкрити файл','Импорт завершён':'Імпорт завершено','Нечего импортировать':'Нічого імпортувати','Добавлено':'Додано','пропущено дублей':'пропущено дублів','Войти':'Увійти','Далее':'Далі','Создать':'Створити','ПИН-код':'ПІН-код','Полночь':'Північ','Лес':'Ліс','Сумерки':'Сутінки','Закат':'Захід','Изменить ПИН-код':'Змінити ПІН-код','Пароль (12 символов)':'Пароль (12 символів)','Нужно от 12 символов':'Потрібно від 12 символів','О приложении':'Про застосунок','Менеджер паролей':'Менеджер паролів','Офлайн-программа, версия 1.0. Работает без интернета: пароли никуда не отправляются.':'Офлайн-програма, версія 1.0. Працює без інтернету: паролі нікуди не надсилаються.','Хранилище':'Сховище','Шифруется средствами системы. Ключ защищён самой системой (Windows или macOS): открыть хранилище может только ваша учётная запись.':'Шифрується засобами системи. Ключ захищає сама система (Windows або macOS): відкрити сховище може лише ваш обліковий запис.','ПИН-код':'ПІН-код','Закрывает вход в приложение. Сами файлы он не шифрует.':'Закриває вхід у застосунок. Самі файли він не шифрує.','Бэкап':'Бекап','ZIP-архив с шифрованием AES-256 и вашим паролем (12 символов). Внутри текст для чтения и файл для восстановления.':'ZIP-архів із шифруванням AES-256 і вашим паролем (від 12 символів). Усередині текст для читання і файл для відновлення.','Буфер обмена':'Буфер обміну','Скопированный пароль очищается через 30 секунд.':'Скопійований пароль очищається через 30 секунд.','Закрыть':'Закрити','Найти иконку':'Знайти іконку','Мои пароли':'Мої паролі',},
+pl:{'Менеджер паролей':'Menedżer haseł','создал denkasta':'stworzył denkasta',
+'Поиск сайта или логина':'Szukaj strony lub loginu','Новый раздел':'Nowa sekcja','Тема':'Motyw','Новый аккаунт':'Nowe konto','Изменить аккаунт':'Edytuj konto',
+'Логин или почта':'Login lub e-mail','Пароль':'Hasło','Заметка (необязательно)':'Notatka (opcjonalnie)','Показать пароль':'Pokaż hasło','Сгенерировать':'Wygeneruj',
+'Отмена':'Anuluj','Сохранить':'Zapisz','Создать':'Utwórz','Сбросить':'Resetuj','Закрыть':'Zamknij','Удалить':'Usuń',
+'Название, например Discord':'Nazwa, np. Discord','Иконка (необязательно)':'Ikona (opcjonalnie)','Тема и язык':'Motyw i język','Язык':'Język',
+'Терракота':'Terakota','Светлая':'Jasny',
+'Раздел':'Sekcja','Логин':'Login','Заметка':'Notatka','Копировать логин':'Kopiuj login','Копировать пароль':'Kopiuj hasło','Показать':'Pokaż','Изменить':'Edytuj','Нажмите, чтобы скопировать':'Kliknij, aby skopiować',
+'{n} акк.':'{n} kont','Аккаунтов: {n}':'Kont: {n}','Пока нет аккаунтов':'Brak kont','В этом разделе пока нет аккаунтов':'W tej sekcji nie ma jeszcze kont',
+'Сменить иконку':'Zmień ikonę','Удалить раздел':'Usuń sekcję','Добавить аккаунт':'Dodaj konto','Добавить раздел':'Dodaj sekcję',
+'Ничего не найдено':'Nic nie znaleziono','Пока пусто':'Na razie pusto','Измените запрос':'Zmień zapytanie','Создайте первый раздел':'Utwórz pierwszą sekcję',
+'Скопировано':'Skopiowano','Сохранено':'Zapisano','Раздел добавлен':'Dodano sekcję','Нечего экспортировать':'Brak danych do eksportu','Нужен файл .ico':'Wymagany plik .ico','Не удалось открыть картинку':'Nie udało się otworzyć obrazu','Не удалось сохранить! Проверьте доступ к папке данных':'Nie udało się zapisać! Sprawdź dostęp do folderu danych',
+'Удалить аккаунт?':'Usunąć konto?','Удалить раздел «{n}»?':'Usunąć sekcję „{n}”?','Вместе с ним удалятся аккаунты: {n}':'Razem z nią zostanie usuniętych kont: {n}','В разделе нет аккаунтов':'Sekcja nie ma kont',
+'Иконка раздела «{n}»':'Ikona sekcji „{n}”','Своя иконка (.ico)':'Własna ikona (.ico)','Ошибка':'Błąd','Не удалось открыть хранилище':'Nie udało się otworzyć magazynu',
+'Переименовать':'Zmień nazwę','Добавить':'Dodaj','Мои':'Moje','Игры':'Gry','Соцсети':'Social media','Сервисы':'Usługi','Финансы':'Finanse','Мои':'Moje','Рекомендуемые':'Polecane','Новая группа':'Nowa grupa','Название группы':'Nazwa grupy','Пока пусто. Нажмите «+», чтобы добавить свою иконку.':'Na razie pusto. Naciśnij „+”, aby dodać własną ikonę.','Документы':'Dokumenty','Слишком простой пароль':'Hasło jest zbyt proste','Придумайте мастер-пароль':'Utwórz hasło główne','Повторите мастер-пароль':'Powtórz hasło główne','Введите мастер-пароль':'Wpisz hasło główne','Ровно 12 символов. Забудете его — пароли не восстановить, помогут только бэкапы.':'Dokładnie 12 znaków. Zapomnisz je — haseł nie odzyskasz, pomogą tylko kopie.','Нужно от 16 символов':'Wymagane min. 16 znaków','Нужно от 12 символов':'Wymagane min. 12 znaków','Пароли не совпадают':'Hasła się różnią','Неверный мастер-пароль':'Złe hasło główne','Новый мастер-пароль':'Nowe hasło główne','Мастер-пароль изменён':'Hasło główne zmienione','Не удалось сменить пароль':'Nie udało się zmienić hasła','Мастер-пароль':'Hasło główne','Сменить мастер-пароль':'Zmień hasło główne','Шифруется AES-256-GCM. Ключ получается из вашего мастер-пароля (Argon2id) и нигде не хранится: без пароля файл не открыть, даже с другого компьютера или с загрузочной флешки.':'Szyfrowanie AES-256-GCM. Klucz powstaje z hasła głównego (Argon2id) i nigdzie nie jest zapisywany: bez hasła plik się nie otworzy, nawet na innym komputerze lub z rozruchowego pendrive’a.','Забытый пароль восстановить нельзя: храните бэкап и запомните пароль. ':'Zapomnianego hasła nie da się odzyskać: trzymaj kopię i zapamiętaj hasło. ','ещё не было':'jeszcze nie było','Показать в папке':'Pokaż w folderze','Пароль для бэкапа':'Hasło do kopii','Бэкап':'Kopia','Бэкап сохранён. Перенесите файл с этого компьютера: здесь его могут взять':'Kopia zapisana. Przenieś plik z tego komputera: tu ktoś może go zabrać','Не удалось сохранить бэкап':'Nie udało się zapisać kopii','Импорт':'Import','Пароль архива':'Hasło archiwum','Неверный пароль, ещё раз':'Złe hasło, spróbuj ponownie','Введите пароль, который вы задали при создании бэкапа.':'Wpisz hasło ustawione przy tworzeniu kopii.','Открыть':'Otwórz','Не удалось открыть файл':'Nie udało się otworzyć pliku','Импорт завершён':'Import zakończony','Нечего импортировать':'Brak danych do importu','Добавлено':'Dodano','пропущено дублей':'pominięto duplikatów','Войти':'Wejdź','Далее':'Dalej','Создать':'Utwórz','ПИН-код':'PIN','Полночь':'Północ','Лес':'Las','Сумерки':'Zmierzch','Закат':'Zachód','Изменить ПИН-код':'Zmień PIN','Пароль (12 символов)':'Hasło (12 znaków)','Нужно от 12 символов':'Wymagane min. 12 znaków','О приложении':'O aplikacji','Менеджер паролей':'Menedżer haseł','Офлайн-программа, версия 1.0. Работает без интернета: пароли никуда не отправляются.':'Program offline, wersja 1.0. Działa bez internetu: hasła nigdzie nie są wysyłane.','Хранилище':'Skarbiec','Шифруется средствами системы. Ключ защищён самой системой (Windows или macOS): открыть хранилище может только ваша учётная запись.':'Szyfrowany przez system. Klucz chroni sam system (Windows lub macOS): skarbiec otworzy tylko Twoje konto.','ПИН-код':'PIN','Закрывает вход в приложение. Сами файлы он не шифрует.':'Blokuje wejście do aplikacji. Samych plików nie szyfruje.','Бэкап':'Kopia','ZIP-архив с шифрованием AES-256 и вашим паролем (12 символов). Внутри текст для чтения и файл для восстановления.':'Archiwum ZIP z szyfrowaniem AES-256 i Twoim hasłem (min. 12 znaków). W środku: tekst do czytania i plik do przywrócenia.','Буфер обмена':'Schowek','Скопированный пароль очищается через 30 секунд.':'Skopiowane hasło jest czyszczone po 30 sekundach.','Закрыть':'Zamknij','Найти иконку':'Znajdź ikonę','Мои пароли':'Moje hasła',}};
+const RU=new Set(Object.keys(DICT.en));
+let lang='en';try{lang=localStorage.getItem('pm-lang')||(({ru:'ru',uk:'uk',pl:'pl'})[(navigator.language||'en').slice(0,2)]||'en')}catch{}
+const t=(k,p)=>{let v=(DICT[lang]&&DICT[lang][k])||k;if(p)for(const x in p)v=v.replace('{'+x+'}',p[x]);return v};
+// translate static / template text nodes and placeholder/title attributes (originals are remembered, so the language can be switched back and forth)
+const tr=(root=document.body)=>{const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
+  while(n=w.nextNode()){const v=n.nodeValue,k=n._ru??(n._ru=v.trim());if(!RU.has(k))continue;n.nodeValue=v.match(/^\s*/)[0]+t(k)+v.match(/\s*$/)[0]}
+  root.querySelectorAll('[placeholder],[title]').forEach(el=>['placeholder','title'].forEach(a=>{if(!el.hasAttribute(a))return;const k=el.dataset['r'+a]??(el.dataset['r'+a]=el.getAttribute(a));if(RU.has(k))el.setAttribute(a,t(k))}))};
+let themeId='terra';try{themeId=localStorage.getItem('pm-theme')||'terra'}catch{}
+const applyTheme=id=>{const t=THEMES[id]||THEMES.terra,r=document.documentElement;themeId=THEMES[id]?id:'terra';
+  for(const[k,v]of Object.entries(t.v))r.style.setProperty(k,v);r.style.colorScheme=themeId==='sand'?'light':'dark'};
+applyTheme(themeId);
+const api=(()=>{let n=0;const w={};window.__res=(id,r)=>{w[id](r);delete w[id]};
+  const call=(c,a,x)=>new Promise(r=>{const id=++n;w[id]=r;window.ipc.postMessage(JSON.stringify({id,c,a,w:x}))});
+  return{zoom:x=>window.ipc.postMessage(JSON.stringify({id:0,c:'zoom',a:x})),title:x=>window.ipc.postMessage(JSON.stringify({id:0,c:'title',a:x})),copy:(t,w)=>window.ipc.postMessage(JSON.stringify({id:0,c:'copy',a:t,w})),state:()=>call('state'),open:pw=>call('open',pw),rekey:(pw,d)=>call('rekey',pw,d),lock:()=>call('lock'),save:d=>call('save',d),reveal:p=>window.ipc.postMessage(JSON.stringify({id:0,c:'reveal',a:p})),imp:(p,k)=>call('import',p,k),pdf:(h,n,k)=>call('backup',h,{n,k})}})();
+let data=[],META={},cur=null,msite=null,editId=null,shown=new Set(); // META: section order, groups and own icons, stored inside the encrypted vault
+const pack=()=>({e:data,m:META}),kvGet=k=>Array.isArray(META[k])?META[k]:[],kvSet=(k,v)=>{META[k]=v;save()};
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const ic=p=>`<svg viewBox="0 0 24 24">${p}</svg>`;
+const I={user:ic('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>'),copy:ic('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h8"/>'),
+ eye:ic('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),eyeoff:ic('<path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0112 5c6 0 10 7 10 7a17 17 0 01-3.2 3.9M6.6 6.6A17 17 0 002 12s4 7 10 7c1.8 0 3.4-.5 4.9-1.3"/>'),
+ edit:ic('<path d="M4 20h4L19 9l-4-4L4 16v4z"/>'),del:ic('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+ pdf:ic('<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/>'),lock:ic('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/>'),
+ gen:ic('<path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/>')};
+$('gen').innerHTML=I.gen;const IMPI='<svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg>';
+const THB=ic('<circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="16" cy="10" r="1.2"/><path d="M12 21c-1.5 0-2-1.5-1-2.5s0-2.5-2-2.5"/>');
+function applyLang(l){lang=l;try{localStorage.setItem('pm-lang',l)}catch{};document.documentElement.lang=l;
+  $('pdf').innerHTML=I.pdf+t('Бэкап');$('imp').innerHTML=IMPI+t('Импорт');$('aboutb').innerHTML=ic('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>')+t('О приложении');$('thb').innerHTML=THB+t('Тема');document.title=t('Менеджер паролей');api.title(document.title);
+  tr(document.body);if(!$('app').classList.contains('hide'))render()}
+applyLang(lang);
+const showPw=on=>{$('fp').type=on?'text':'password';$('feye').innerHTML=on?I.eye:I.eyeoff};showPw(false);
+$('feye').onclick=()=>showPw($('fp').type==='password');
+// Simplified brand marks: [name regex, background, svg inner on a 24x24 grid]
+const T=(t,s)=>`<text x="12" y="16" text-anchor="middle" font-family="Segoe UI,Arial" font-weight="800" font-size="${s}" fill="#fff">${t}</text>`;
+const BR=[
+ [/pko|пко/,'#fff','<svg x="3.2" y="1.2" width="17.6" height="21.6" viewBox="19 2.5 64 86"><defs><linearGradient id="pkoa"><stop offset="0" stop-color="#004c9a"/><stop offset=".33" stop-color="#013f84"/><stop offset=".77" stop-color="#051a43"/><stop offset="1" stop-color="#070016"/></linearGradient><radialGradient id="pkob" cx="49.9" cy="23.7" gradientUnits="userSpaceOnUse" r="60" href="#pkoa"/><radialGradient id="pkoc" cx="49.9" cy="23.7" gradientUnits="userSpaceOnUse" r="60" href="#pkoa"/><radialGradient id="pkod" cx="49.9" cy="23.7" gradientUnits="userSpaceOnUse" r="60" href="#pkoa"/></defs><path d="m50.2 21c4.8 0 8.7-3.9 8.7-8.7s-3.9-8.7-8.7-8.7-8.7 3.9-8.7 8.7 3.9 8.7 8.7 8.7z" fill="#e4202c"/><path d="m50.2 45.9c11.5 0 21.4-2.9 25.6-6.8 1.4-1.3 2.1-2.8 2.1-4.3s-.8-2.9-2.1-4.3c-1.4-1.3-3.4-2.5-5.9-3.5-5-2-12-3.3-19.7-3.3h-.1c-10.3 0-19.3 2.4-24.1 5.7-2.8 1.9-3.6 4.2-3.6 6.9v30.9c0 3.5 1 5 1.5 5.8 1.5 2.5 3.5 4.5 6 6l.2.1v-36.7l.2.1c5.1 2.1 12.1 3.4 19.9 3.4zm-11.7-11.5c-.2-.2-.2-.5-.2-.6 0-.5.4-1.1 1-1.4.3-.2.7-.2 1-.2h20.3c.3 0 .7.1 1 .2.7.3 1 .9 1 1.4 0 .2-.1.4-.2.6-.3.3-.7.5-1.1.5h-21.7c-.4 0-.9-.2-1.1-.5z" fill="url(#pkob)"/><path d="m54.2 79.2v-8.8c0-2.7-2.2-4.8-4.9-4.9h-.1v-.8c2.8-.3 4.9-2.5 4.9-5.3v-6.2c0-1.4.1-2.8.5-4.1l.1-.2h-.2c-.7.1-1.9.1-3.2.1-1.9 0-4-.1-5.1-.2h-.2v.1c-.5 1.5-.7 2.8-.7 4.4v7c0 1.5-1.1 3.1-3.1 3.2v-15.1h-.1c-3.4-.4-5.9-1-8.6-1.9l-.2-.1v34.5h.1c2.7 1.2 5.3 2 8.7 2.6h.1v-17.5c1.9.1 3.1 1.6 3.1 3.2v9.6c0 2 .4 3.6.9 5.3v.1h.1c.7.1 1.8.1 3.1.1 1.8 0 3.9-.1 5.3-.3h.1v-.2c-.4-1.5-.6-2.9-.6-4.6z" fill="url(#pkoc)"/><path d="m77.1 45c0-.8-.7-1.5-1.5-1.5-.2 0-.5.1-.7.2-3.8 2.2-9.2 4-15.2 4.8-1.3.2-2.3 1.3-2.3 2.7v29.6c0 1.2 1 2.2 2.2 2.2.2 0 .3 0 .5-.1 4.7-1.2 8.7-3 11.9-5.6 2.8-2.4 5.1-5.7 5.1-9.5zm-7.7 7.4v20.6c0 .5-.3 1-.9 1.4-.8.5-1.7.5-2.1-.1-.1-.2-.1-.4-.1-.5v-21.3c0-.5.5-1.1 1.2-1.3.2-.1.3-.1.5-.1.7 0 1.2.3 1.4.9v.3z" fill="url(#pkod)"/></svg>'],
+ [/^менеджер паролей$/,'var(--acc)','<rect x="5" y="11" width="14" height="10" rx="2" fill="#1f1e1d"/><path d="M8.5 11V8a3.5 3.5 0 017 0v3" fill="none" stroke="#1f1e1d" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="16" r="1.4" fill="var(--acc)"/>'],
+ [/google|гугл/,'#fff','<g fill="none" stroke-width="3"><path stroke="#ea4335" d="M16.98 7.82A6.5 6.5 0 0 0 7.4 7.4"/><path stroke="#fbbc05" d="M7.4 7.4A6.5 6.5 0 0 0 7.4 16.6"/><path stroke="#34a853" d="M7.4 16.6A6.5 6.5 0 0 0 16.6 16.6"/><path stroke="#4285f4" d="M16.6 16.6A6.5 6.5 0 0 0 18.5 12H12"/></g>'],
+ [/microsoft|майкрософт|майкросо/,'#fff','<path fill="#f25022" d="M3 3h8.5v8.5H3z"/><path fill="#7fba00" d="M12.5 3H21v8.5h-8.5z"/><path fill="#00a4ef" d="M3 12.5h8.5V21H3z"/><path fill="#ffb900" d="M12.5 12.5H21V21h-8.5z"/>'],
+ [/discord|дискорд/,'#5865f2','<path fill="#fff" d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/>'],
+ [/roblox|роблокс/,'#fff','<path fill="#000" d="M18.926 23.998 0 18.892 5.075.002 24 5.108ZM15.348 10.09l-5.282-1.453-1.414 5.273 5.282 1.453z"/>'],
+ [/steam|стим/,'#171a21','<path fill="#fff" d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/>'],
+ [/ubisoft|юбисофт|убисофт/,'#fff','<path fill="#000" d="M23.561 11.988C23.301-.304 6.954-4.89.656 6.634c.282.206.661.477.943.672a11.747 11.747 0 00-.976 3.067 11.885 11.885 0 00-.184 2.071C.439 18.818 5.621 24 12.005 24c6.385 0 11.556-5.17 11.556-11.556v-.455zm-20.27 2.06c-.152 1.246-.054 1.636-.054 1.788l-.282.098c-.108-.206-.37-.932-.488-1.908C2.163 10.308 4.7 6.96 8.57 6.33c3.544-.52 6.937 1.68 7.728 4.758l-.282.098c-.087-.087-.228-.336-.77-.878-4.281-4.281-11.002-2.32-11.956 3.74zm11.002 2.081a3.145 3.145 0 01-2.59 1.355 3.15 3.15 0 01-3.155-3.155 3.159 3.159 0 012.927-3.144c1.018-.043 1.972.51 2.416 1.398a2.58 2.58 0 01-.455 2.95c.293.205.575.4.856.595zm6.58.12c-1.669 3.782-5.106 5.766-8.77 5.712-7.034-.347-9.083-8.466-4.38-11.393l.207.206c-.076.108-.358.325-.791 1.182-.51 1.041-.672 2.081-.607 2.732.369 5.67 8.314 6.83 11.045 1.214C21.057 8.217 11.822.401 3.626 6.374l-.184-.184C5.599 2.808 9.816 1.3 13.837 2.309c6.147 1.55 9.453 7.956 7.035 13.94z"/>'],
+ [/дія|дия|diia/,'#000','IMG:data:image/png;base64,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'],
+ [/mono|моно/,'#000','<text x="12" y="15" text-anchor="middle" font-family="Segoe UI,Arial" font-weight="800" font-size="8.2" letter-spacing="-.2" fill="#fff">mono</text>'],
+ [/erste|эрсте|ерсте/,'#2371ee','<g fill="#fff" transform="translate(12 12) scale(.1) translate(-454.8 -75)"><path d="m 397.11,123.39 h 88.43 v -11.87 h -88.26 c -0.07,-1.37 -0.03,-28.14 -0.21,-40.51 -0.15,-10.55 7.05,-20.82 20.66,-20.59 24.8,0.41 49.63,0.41 74.43,-0.02 10.69,-0.19 20.42,7.66 20.41,20.43 0,1.78 -0.01,3.96 -0.01,6.27 h -88.51 v 11.59 l 88.51,-0.02 c 0,1.59 0.03,28.4 0,40.87 -0.04,12.55 -8.08,20.44 -20.78,20.45 -24.6,0 -49.2,0 -73.8,0 -12.8,0 -20.81,-7.98 -20.86,-20.77 0,-1.78 0,-3.56 0,-5.83"/><path d="m 454.94,38.03 c -10.46,0 -18.92,-8.62 -18.86,-19.2 0.05,-10.4 8.55,-18.85 18.93,-18.83 10.37,0.02 18.85,8.51 18.87,18.9 0.02,10.56 -8.47,19.14 -18.94,19.13"/></g>'],
+ [/mobywatel|мобыватель|мобивател/,'#dc143c','<path fill="#fff" d="M12 4.3 6.9 6v5.3c0 3.6 2.1 6.1 5.1 7.3 3-1.2 5.1-3.7 5.1-7.3V6z"/><path fill="#dc143c" d="M9.3 10.4l1.3 1.2 1.4-2.3 1.4 2.3 1.3-1.2v2.6H9.3z"/>'],
+ [/telegram|телеграм/,'#26A5E4','<path fill="#fff" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>'],
+ [/instagram|инстаграм/,'#FF0069','<path fill="#fff" d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/>'],
+ [/facebook|фейсбук/,'#0866FF','<path fill="#fff" d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/>'],
+ [/^(x|twitter|твиттер)$/,'#000000','<path fill="#fff" d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/>'],
+ [/github|гитхаб/,'#181717','<path fill="#fff" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>'],
+ [/youtube|ютуб/,'#FF0000','<path fill="#fff" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>'],
+ [/apple|эппл|эпл/,'#000000','<path fill="#fff" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>'],
+ [/amazon|амазон/,'#FF9900','<path fill="#fff" d="M.045 18.02c.072-.116.187-.124.348-.022 3.636 2.11 7.594 3.166 11.87 3.166 2.852 0 5.668-.533 8.447-1.595l.315-.14c.138-.06.234-.1.293-.13.226-.088.39-.046.525.13.12.174.09.336-.12.48-.256.19-.6.41-1.006.654-1.244.743-2.64 1.316-4.185 1.726a17.617 17.617 0 01-10.951-.577 17.88 17.88 0 01-5.43-3.35c-.1-.074-.151-.15-.151-.22 0-.047.021-.09.051-.13zm6.565-6.218c0-1.005.247-1.863.743-2.577.495-.71 1.17-1.25 2.04-1.615.796-.335 1.756-.575 2.912-.72.39-.046 1.033-.103 1.92-.174v-.37c0-.93-.105-1.558-.3-1.875-.302-.43-.78-.65-1.44-.65h-.182c-.48.046-.896.196-1.246.46-.35.27-.575.63-.675 1.096-.06.3-.206.465-.435.51l-2.52-.315c-.248-.06-.372-.18-.372-.39 0-.046.007-.09.022-.15.247-1.29.855-2.25 1.82-2.88.976-.616 2.1-.975 3.39-1.05h.54c1.65 0 2.957.434 3.888 1.29.135.15.27.3.405.48.12.165.224.314.283.45.075.134.15.33.195.57.06.254.105.42.135.51.03.104.062.3.076.615.01.313.02.493.02.553v5.28c0 .376.06.72.165 1.036.105.313.21.54.315.674l.51.674c.09.136.136.256.136.36 0 .12-.06.226-.18.314-1.2 1.05-1.86 1.62-1.963 1.71-.165.135-.375.15-.63.045a6.062 6.062 0 01-.526-.496l-.31-.347a9.391 9.391 0 01-.317-.42l-.3-.435c-.81.886-1.603 1.44-2.4 1.665-.494.15-1.093.227-1.83.227-1.11 0-2.04-.343-2.76-1.034-.72-.69-1.08-1.665-1.08-2.94l-.05-.076zm3.753-.438c0 .566.14 1.02.425 1.364.285.34.675.512 1.155.512.045 0 .106-.007.195-.02.09-.016.134-.023.166-.023.614-.16 1.08-.553 1.424-1.178.165-.28.285-.58.36-.91.09-.32.12-.59.135-.8.015-.195.015-.54.015-1.005v-.54c-.84 0-1.484.06-1.92.18-1.275.36-1.92 1.17-1.92 2.43l-.035-.02zm9.162 7.027c.03-.06.075-.11.132-.17.362-.243.714-.41 1.05-.5a8.094 8.094 0 011.612-.24c.14-.012.28 0 .41.03.65.06 1.05.168 1.172.33.063.09.099.228.099.39v.15c0 .51-.149 1.11-.424 1.8-.278.69-.664 1.248-1.156 1.68-.073.06-.14.09-.197.09-.03 0-.06 0-.09-.012-.09-.044-.107-.12-.064-.24.54-1.26.806-2.143.806-2.64 0-.15-.03-.27-.087-.344-.145-.166-.55-.257-1.224-.257-.243 0-.533.016-.87.046-.363.045-.7.09-1 .135-.09 0-.148-.014-.18-.044-.03-.03-.036-.047-.02-.077 0-.017.006-.03.02-.063v-.06z"/>'],
+ [/netflix|нетфликс/,'#E50914','<path fill="#fff" d="M5.398 0v.006c3.028 8.556 5.37 15.175 8.348 23.596 2.344.058 4.85.398 4.854.398-2.8-7.924-5.923-16.747-8.487-24zm8.489 0v9.63L18.6 22.951c-.043-7.86-.004-15.913.002-22.95zM5.398 1.05V24c1.873-.225 2.81-.312 4.715-.398v-9.22z"/>'],
+ [/spotify|спотифай/,'#1ED760','<path fill="#fff" d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>'],
+ [/paypal|пейпал/,'#003087','<path fill="#fff" d="M7.016 19.198h-4.2a.562.562 0 0 1-.555-.65L5.093.584A.692.692 0 0 1 5.776 0h7.222c3.417 0 5.904 2.488 5.846 5.5-.006.25-.027.5-.066.747A6.794 6.794 0 0 1 12.071 12H8.743a.69.69 0 0 0-.682.583l-.325 2.056-.013.083-.692 4.39-.015.087zM19.79 6.142c-.01.087-.01.175-.023.261a7.76 7.76 0 0 1-7.695 6.598H9.007l-.283 1.795-.013.083-.692 4.39-.134.843-.014.088H6.86l-.497 3.15a.562.562 0 0 0 .555.65h3.612c.34 0 .63-.249.683-.585l.952-6.031a.692.692 0 0 1 .683-.584h2.126a6.793 6.793 0 0 0 6.707-5.752c.306-1.95-.466-3.744-1.89-4.906z"/>'],
+ [/binance|бинанс/,'#F0B90B','<path fill="#000" d="M16.624 13.9202l2.7175 2.7154-7.353 7.353-7.353-7.352 2.7175-2.7164 4.6355 4.6595 4.6356-4.6595zm4.6366-4.6366L24 12l-2.7154 2.7164L18.5682 12l2.6924-2.7164zm-9.272.001l2.7163 2.6914-2.7164 2.7174v-.001L9.2721 12l2.7164-2.7154zm-9.2722-.001L5.4088 12l-2.6914 2.6924L0 12l2.7164-2.7164zM11.9885.0115l7.353 7.329-2.7174 2.7154-4.6356-4.6356-4.6355 4.6595-2.7174-2.7154 7.353-7.353z"/>'],
+ [/epic|эпик/,'#313131','<path fill="#fff" d="M3.537 0C2.165 0 1.66.506 1.66 1.879V18.44a4.262 4.262 0 00.02.433c.031.3.037.59.316.92.027.033.311.245.311.245.153.075.258.13.43.2l8.335 3.491c.433.199.614.276.928.27h.002c.314.006.495-.071.928-.27l8.335-3.492c.172-.07.277-.124.43-.2 0 0 .284-.211.311-.243.28-.33.285-.621.316-.92a4.261 4.261 0 00.02-.434V1.879c0-1.373-.506-1.88-1.878-1.88zm13.366 3.11h.68c1.138 0 1.688.553 1.688 1.696v1.88h-1.374v-1.8c0-.369-.17-.54-.523-.54h-.235c-.367 0-.537.17-.537.539v5.81c0 .369.17.54.537.54h.262c.353 0 .523-.171.523-.54V8.619h1.373v2.143c0 1.144-.562 1.71-1.7 1.71h-.694c-1.138 0-1.7-.566-1.7-1.71V4.82c0-1.144.562-1.709 1.7-1.709zm-12.186.08h3.114v1.274H6.117v2.603h1.648v1.275H6.117v2.774h1.74v1.275h-3.14zm3.816 0h2.198c1.138 0 1.7.564 1.7 1.708v2.445c0 1.144-.562 1.71-1.7 1.71h-.799v3.338h-1.4zm4.53 0h1.4v9.201h-1.4zm-3.13 1.235v3.392h.575c.354 0 .523-.171.523-.54V4.965c0-.368-.17-.54-.523-.54zm-3.74 10.147a1.708 1.708 0 01.591.108 1.745 1.745 0 01.49.299l-.452.546a1.247 1.247 0 00-.308-.195.91.91 0 00-.363-.068.658.658 0 00-.28.06.703.703 0 00-.224.163.783.783 0 00-.151.243.799.799 0 00-.056.299v.008a.852.852 0 00.056.31.7.7 0 00.157.245.736.736 0 00.238.16.774.774 0 00.303.058.79.79 0 00.445-.116v-.339h-.548v-.565H7.37v1.255a2.019 2.019 0 01-.524.307 1.789 1.789 0 01-.683.123 1.642 1.642 0 01-.602-.107 1.46 1.46 0 01-.478-.3 1.371 1.371 0 01-.318-.455 1.438 1.438 0 01-.115-.58v-.008a1.426 1.426 0 01.113-.57 1.449 1.449 0 01.312-.46 1.418 1.418 0 01.474-.309 1.58 1.58 0 01.598-.111 1.708 1.708 0 01.045 0zm11.963.008a2.006 2.006 0 01.612.094 1.61 1.61 0 01.507.277l-.386.546a1.562 1.562 0 00-.39-.205 1.178 1.178 0 00-.388-.07.347.347 0 00-.208.052.154.154 0 00-.07.127v.008a.158.158 0 00.022.084.198.198 0 00.076.066.831.831 0 00.147.06c.062.02.14.04.236.061a3.389 3.389 0 01.43.122 1.292 1.292 0 01.328.17.678.678 0 01.207.24.739.739 0 01.071.337v.008a.865.865 0 01-.081.382.82.82 0 01-.229.285 1.032 1.032 0 01-.353.18 1.606 1.606 0 01-.46.061 2.16 2.16 0 01-.71-.116 1.718 1.718 0 01-.593-.346l.43-.514c.277.223.578.335.9.335a.457.457 0 00.236-.05.157.157 0 00.082-.142v-.008a.15.15 0 00-.02-.077.204.204 0 00-.073-.066.753.753 0 00-.143-.062 2.45 2.45 0 00-.233-.062 5.036 5.036 0 01-.413-.113 1.26 1.26 0 01-.331-.16.72.72 0 01-.222-.243.73.73 0 01-.082-.36v-.008a.863.863 0 01.074-.359.794.794 0 01.214-.283 1.007 1.007 0 01.34-.185 1.423 1.423 0 01.448-.066 2.006 2.006 0 01.025 0zm-9.358.025h.742l1.183 2.81h-.825l-.203-.499H8.623l-.198.498h-.81zm2.197.02h.814l.663 1.08.663-1.08h.814v2.79h-.766v-1.602l-.711 1.091h-.016l-.707-1.083v1.593h-.754zm3.469 0h2.235v.658h-1.473v.422h1.334v.61h-1.334v.442h1.493v.658h-2.255zm-5.3.897l-.315.793h.624zm-1.145 5.19h8.014l-4.09 1.348z"/>'],
+ [/playstation|плейстейшн|psn/,'#0070D1','<path fill="#fff" d="M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1.151.794-.991.636.18.76.814.76 1.505v5.875c2.441 1.193 4.362-.002 4.362-3.152 0-3.237-1.126-4.675-4.438-5.827-1.307-.448-3.728-1.186-5.39-1.502zm4.656 16.241l6.296-2.275c.715-.258.826-.625.246-.818-.586-.192-1.637-.139-2.357.123l-4.205 1.5V14.98l.24-.085s1.201-.42 2.913-.615c1.696-.18 3.785.03 5.437.661 1.848.601 2.04 1.472 1.576 2.072-.465.6-1.622 1.036-1.622 1.036l-8.544 3.107V18.86zM1.807 18.6c-1.9-.545-2.214-1.668-1.352-2.32.801-.586 2.16-1.052 2.16-1.052l5.615-2.013v2.313L4.205 17c-.705.271-.825.632-.239.826.586.195 1.637.15 2.343-.12L8.247 17v2.074c-.12.03-.256.044-.39.073-1.939.331-3.996.196-6.038-.479z"/>'],
+ [/tiktok|тикток/,'#000000','<path fill="#fff" d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>'],
+ [/twitch|твич/,'#9146FF','<path fill="#fff" d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>'],
+ [/reddit|реддит/,'#FF4500','<path fill="#fff" d="M12 0C5.373 0 0 5.373 0 12c0 3.314 1.343 6.314 3.515 8.485l-2.286 2.286C.775 23.225 1.097 24 1.738 24H12c6.627 0 12-5.373 12-12S18.627 0 12 0Zm4.388 3.199c1.104 0 1.999.895 1.999 1.999 0 1.105-.895 2-1.999 2-.946 0-1.739-.657-1.947-1.539v.002c-1.147.162-2.032 1.15-2.032 2.341v.007c1.776.067 3.4.567 4.686 1.363.473-.363 1.064-.58 1.707-.58 1.547 0 2.802 1.254 2.802 2.802 0 1.117-.655 2.081-1.601 2.531-.088 3.256-3.637 5.876-7.997 5.876-4.361 0-7.905-2.617-7.998-5.87-.954-.447-1.614-1.415-1.614-2.538 0-1.548 1.255-2.802 2.803-2.802.645 0 1.239.218 1.712.585 1.275-.79 2.881-1.291 4.64-1.365v-.01c0-1.663 1.263-3.034 2.88-3.207.188-.911.993-1.595 1.959-1.595Zm-8.085 8.376c-.784 0-1.459.78-1.506 1.797-.047 1.016.64 1.429 1.426 1.429.786 0 1.371-.369 1.418-1.385.047-1.017-.553-1.841-1.338-1.841Zm7.406 0c-.786 0-1.385.824-1.338 1.841.047 1.017.634 1.385 1.418 1.385.785 0 1.473-.413 1.426-1.429-.046-1.017-.721-1.797-1.506-1.797Zm-3.703 4.013c-.974 0-1.907.048-2.77.135-.147.015-.241.168-.183.305.483 1.154 1.622 1.964 2.953 1.964 1.33 0 2.47-.81 2.953-1.964.057-.137-.037-.29-.184-.305-.863-.087-1.795-.135-2.769-.135Z"/>'],
+ [/whatsapp|ватсап|вотсап/,'#25D366','<path fill="#fff" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>'],
+];
+const icoOf=s=>data.find(x=>x.site===s&&x.icon)?.icon;
+const av=(s,custom)=>{const c=custom??icoOf(s);if(c&&c.startsWith('brand:'))return av(c.slice(6),'');if(c)return `<div class="av cu"><img src="${c}"></div>`;
+  const b=BR.find(x=>x[0].test(s.toLowerCase()));
+  if(b&&b[2].startsWith('IMG:'))return `<div class="av" style="background:${b[1]}"><img src="${b[2].slice(4)}"></div>`;
+  return b?`<div class="av" style="background:${b[1]}"><svg viewBox="0 0 24 24">${b[2]}</svg></div>`
+  :`<div class="av ph">${esc(s[0].toUpperCase())}</div>`};
+const toast=m=>{$('toast').textContent=t(m);$('toast').classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').classList.remove('on'),2600)};
+const save=()=>api.save(pack()).then(ok=>{if(!ok)toast('Не удалось сохранить! Проверьте доступ к папке данных')});
+const MODALS=['modal','sec','ico','ask','thm','pw','ipw','cpw','abt'],show=id=>{tr($(id));$(id).querySelectorAll('.eyeb').forEach(b=>{if(b.previousElementSibling.type!=='password')b.click()});iconQ='';$(id).querySelectorAll('.isq').forEach(i=>i.value='');$(id).classList.remove('hide')},close=()=>MODALS.forEach(m=>$(m).classList.add('hide'));
+
+// ---- startup: no login
+// Windows-style toast: slides in at the bottom right (e.g. after a backup is saved)
+const lockI='<svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>';
+let wtPath='';
+const wtCard=(title,text,path)=>{wtPath=path||'';$('wt').innerHTML=`<div class="nh">${lockI}<span>${t('Менеджер паролей')}</span><button class="wx" type="button">×</button></div><b>${t(title)}</b><p style="word-break:break-all">${esc(text)}</p>${path?`<button class="btn sm" data-open="1" style="margin-top:10px">${t('Показать в папке')}</button>`:''}`;$('wt').classList.add('on');clearTimeout(wtShow.t);wtShow.t=setTimeout(()=>$('wt').classList.remove('on'),9000)};
+const start=d=>{data=d;$('app').classList.remove('hide');render(true);idle()};
+// auto-lock: 5 minutes without a click or key press (or minimising the window, see main.rs) wipes the key and returns to the sign-in screen
+const idle=(()=>{let tm=0;const arm=()=>{clearTimeout(tm);tm=setTimeout(()=>api.lock().then(()=>location.reload()),3e5)};return()=>{['pointerdown','keydown'].forEach(ev=>addEventListener(ev,arm,true));arm()}})();
+$('wt').onclick=e=>{if(e.target.closest('.wx'))return $('wt').classList.remove('on');if(e.target.closest('[data-open]'))return api.reveal(wtPath)};
+const mask=p=>'•'.repeat((p||'').length||1);
+const nid=()=>data.reduce((m,x)=>Math.max(m,+x.id||0),0)+1; // next free id, never clashes with imported rows
+const DEFSEC='Менеджер паролей'; // default section name: cannot be deleted
+// Master password: first run (or upgrade from the old DPAPI-only vault) creates it, typed twice; later runs ask for it.
+// The key is derived in the Rust side (Argon2id); nothing about the password is stored.
+// eye button next to the password fields: show / hide what is typed
+['pwi','ipi'].forEach(id=>{const i=$(id),w=document.createElement('div');w.className='pwr';i.replaceWith(w);w.append(i);const b=document.createElement('button');b.type='button';b.className='ic eyeb';b.tabIndex=-1;b.title='Показать';w.append(b)}); // backup / archive password fields get the same eye
+document.querySelectorAll('.eyeb').forEach(b=>{const i=b.previousElementSibling,set=()=>{b.innerHTML=i.type==='password'?I.eyeoff:I.eye};set();b.onclick=()=>{i.type=i.type==='password'?'text':'password';set();i.dispatchEvent(new Event('rend'));i.focus()}});
+// same rule as the Rust side: few distinct characters, one straight run or a common word is refused
+const weakPw=v=>{const c=[...v],d=(a,b)=>a.codePointAt(0)-b.codePointAt(0);return new Set(c).size<7||c.slice(1).every((x,i)=>d(x,c[i])===1)||c.slice(1).every((x,i)=>d(c[i],x)===1)||/123456|qwerty|password|пароль|йцукен|abcdef|000000|111111/i.test(v)};
+async function unlock(st){let first=null;const L=$('lock'),I=$('pi'),E=$('pe'),isNew=st!=='locked';
+  const head=k=>{$('lt').textContent=t(k);$('lp').textContent=k==='Придумайте мастер-пароль'?t('Ровно 12 символов. Забудете его — пароли не восстановить, помогут только бэкапы.'):'';$('pgo').textContent=t(k==='Введите мастер-пароль'?'Войти':k==='Повторите мастер-пароль'?'Создать':'Далее')};
+  const keys=Object.keys(LANGS),ql=()=>{const q=$('ql');if(!q.children.length)q.innerHTML='<i class="th"></i>'+keys.map(k=>`<button type="button" data-l="${k}">${k.toUpperCase()}</button>`).join('');
+    q.style.setProperty('--i',keys.indexOf(lang));[...q.querySelectorAll('button')].forEach(b=>b.classList.toggle('on',b.dataset.l===lang))};ql();
+  const cur=()=>isNew?(first===null?'Придумайте мастер-пароль':'Повторите мастер-пароль'):'Введите мастер-пароль';
+  $('ql').onclick=e=>{const b=e.target.closest('[data-l]');if(b&&b.dataset.l!==lang){applyLang(b.dataset.l);head(cur());E.textContent='';ql();
+    $('lt').animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:280,easing:'ease-out'});I.focus()}};
+  L.classList.remove('hide');$('pf').classList.remove('hide');head(cur());setTimeout(()=>I.focus(),50);
+  const ov=document.createElement('div');ov.className='ov';I.after(ov); // typed characters are drawn here so each one can fade in
+  const draw=anim=>{const v=[...I.value],show=I.type!=='password',had=ov.children.length;ov.innerHTML=v.map((c,k)=>`<i${anim&&k===v.length-1&&v.length>had?' class="n"':''}>${show?esc(c):'•'}</i>`).join('')};
+  I.addEventListener('rend',()=>draw(false));
+  const cnt=typed=>{const c=$('pc'),n=I.value.length;I.style.setProperty('--n',n);c.hidden=!isNew||first!==null;c.textContent=n+'/12';c.classList.toggle('ok',n>=12);draw(typed)};I.oninput=()=>{E.textContent='';cnt(true)};cnt();
+  const bad=k=>{E.textContent=t(k);I.value='';cnt();$('pgo').disabled=false;head(cur());L.querySelector('.lbox').classList.remove('shake');void L.offsetWidth;L.querySelector('.lbox').classList.add('shake')};
+  $('pf').onsubmit=async e=>{e.preventDefault();const v=I.value;if($('pgo').disabled)return;E.textContent='';
+    if(isNew){
+      if(first===null){if(v.length<12)return bad('Нужно от 12 символов');if(weakPw(v))return bad('Слишком простой пароль');first=v;I.value='';head(cur());cnt();return}
+      if(v!==first){first=null;return bad('Пароли не совпадают')}}
+    $('pgo').disabled=true;$('pgo').textContent='…';
+    const r=await api.open(v);
+    if(r.bad)return bad('Неверный мастер-пароль');
+    if(!r.data){$('pgo').disabled=false;$('lt').textContent=t('Ошибка');$('lp').textContent=t('Не удалось открыть хранилище')+': '+r.error;return}
+    const raw=r.data,d=Array.isArray(raw)?raw:raw.e;META=Array.isArray(raw)?{}:(raw.m||{});
+    const clean=d.filter(x=>!x.locked);let dirty=clean.length!==d.length; // the old PIN entry is gone: the master password replaces the PIN
+    if(dirty)d.splice(0,d.length,...clean);
+    try{for(const k of ['pm-own','pm-groups','pm-order']){const old=localStorage.getItem(k);if(old!==null){if(!META[k]){try{const a=JSON.parse(old);if(Array.isArray(a)){META[k]=a;dirty=true}}catch{}}localStorage.removeItem(k)}}
+      ['pm-pin2','pm-bak','pm-bakdis'].forEach(k=>localStorage.removeItem(k))}catch{} // leftovers of old versions: PIN hash, backup reminders, plain-text section lists
+    L.classList.add('out');setTimeout(()=>{L.classList.add('hide');L.classList.remove('out');$('pf').classList.add('hide')},300);start(d);if(dirty)save()}}
+(async()=>unlock(await api.state()))();
+
+// ---- render
+const ordGet=()=>kvGet('pm-order'),ordSet=a=>kvSet('pm-order',a); // the user's section order
+const sites=all=>{const q=all?'':$('q').value.toLowerCase(),m=Object.create(null),o=ordGet(),pos=n=>{const i=o.indexOf(n);return i<0?1e9:i}; // no prototype: a site named "constructor" is just a name
+  data.filter(a=>(a.site+(a.login||'')).toLowerCase().includes(q)).forEach(a=>(m[a.site]??=[]).push(a));
+  return Object.entries(m).sort((a,b)=>pos(a[0])-pos(b[0])||a[0].localeCompare(b[0],'ru'))};
+// Drag a section anywhere in the list: it follows the pointer, the others slide aside, the list scrolls near its edges,
+// and on release it glides into its slot. Pointer events, because the window's file-drop handler disables HTML5 drag-and-drop.
+(()=>{const box=$('sites');let src=null,items=[],tops=[],idx=0,step=0,sx=0,sy=0,y0=0,cx=0,cy=0,moved=false,target=0,just=false,raf=0;
+  const py=y=>y-box.getBoundingClientRect().top+box.scrollTop; // pointer Y measured inside the (scrolled) list
+  const place=()=>{const dy=Math.max(-tops[idx],Math.min(tops[items.length-1]-tops[idx],py(cy)-y0));
+    src.style.transform=`translateY(${dy}px)`; // vertical only: sideways it would be clipped by the list
+    const c=tops[idx]+dy+src.offsetHeight/2,f=tops.findIndex((t,i)=>c<t+items[i].offsetHeight);target=f<0?items.length-1:f;
+    items.forEach((el,j)=>{if(el!==src)el.style.transform=idx<target&&j>idx&&j<=target?`translateY(${-step}px)`:idx>target&&j>=target&&j<idx?`translateY(${step}px)`:''})};
+  const loop=()=>{if(!src||!moved)return;const r=box.getBoundingClientRect(),z=44;
+    if(cy<r.top+z)box.scrollTop-=Math.ceil((r.top+z-cy)/4);else if(cy>r.bottom-z)box.scrollTop+=Math.ceil((cy-(r.bottom-z))/4);
+    place();raf=requestAnimationFrame(loop)};
+  box.addEventListener('pointerdown',e=>{const b=e.button===0&&e.target.closest('.site');if(b){src=b;sx=cx=e.clientX;sy=cy=e.clientY;y0=py(e.clientY);moved=false}});
+  addEventListener('pointermove',e=>{if(!src)return;cx=e.clientX;cy=e.clientY;
+    if(moved)return place();if(Math.hypot(cx-sx,cy-sy)<6)return;moved=true;
+    items=[...box.querySelectorAll('.site')];items.forEach(x=>x.classList.remove('in')); // the entry animation would keep overriding our transform
+    tops=items.map(x=>x.offsetTop);idx=target=items.indexOf(src);step=items.length>1?tops[1]-tops[0]:0;
+    src.classList.add('drag');box.classList.add('dragging');loop()});
+  const drop=()=>{if(!src)return;const s=src;src=null;cancelAnimationFrame(raf);if(!moved)return;just=true;setTimeout(()=>just=false,60);
+    s.classList.add('settle');s.style.transform=`translateY(${tops[target]-tops[idx]}px)`;
+    setTimeout(()=>{if(target!==idx){const names=sites(true).map(x=>x[0]),to=items[target].dataset.s;names.splice(names.indexOf(s.dataset.s),1);names.splice(names.indexOf(to)+(target>idx?1:0),0,s.dataset.s);ordSet(names)}
+      box.classList.remove('dragging');render(false,true)},200)};
+  addEventListener('pointerup',drop);addEventListener('pointercancel',drop);
+  box.addEventListener('click',e=>{if(just){e.stopPropagation();e.preventDefault()}},true); // the click that ends a drag must not select a section
+})();
+function render(first,keepView){const list=sites();if(!list.find(([s])=>s===cur))cur=list[0]?.[0]??null;
+  $('sites').innerHTML=list.map(([s,a],i)=>`<button class="site ${s===cur?'on':''}${first===true?' in':''}" style="animation-delay:${i*40}ms" data-s="${esc(s)}">${av(s)}<div><b>${esc(s)}</b><small>${t('{n} акк.',{n:a.filter(x=>!x.section).length})}</small></div></button>`).join('');
+  $('sites').querySelectorAll('.site').forEach(b=>b.onclick=()=>{if(cur===b.dataset.s)return;cur=b.dataset.s;shown.clear();document.querySelectorAll('.site').forEach(x=>x.classList.toggle('on',x===b));view(sites())});
+  if(!keepView)view(list)} // keepView: only the section list changed (reordering), the right side must not flash
+function view(list){const accs=list.find(([s])=>s===cur)?.[1].filter(x=>!x.section);
+  $('view').innerHTML=!accs?`<div class="empty"><h2>${data.length?'Ничего не найдено':'Пока пусто'}</h2><p style="margin:0 0 18px">${data.length?'Измените запрос':'Создайте первый раздел'}</p><button class="btn" onclick="openSec()">Добавить раздел</button></div>`
+  :`<div class="head"><div class="ht"><h2>${esc(cur)}</h2><div class="sub"><small>${accs.length?t('Аккаунтов: {n}',{n:accs.length}):t('Пока нет аккаунтов')}</small></div></div><div class="hacts">${cur===DEFSEC?'':`<button class="btn ghost sm" onclick="openIco(cur)">${ic('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>')}Сменить иконку</button>`}${cur===DEFSEC?'':`<button class="btn danger sm" onclick="delSec(cur)">${I.del}Удалить раздел</button>`}${cur===DEFSEC?'':`<button class="btn sm" onclick="openM()">${ic('<path d="M12 5v14M5 12h14"/>')}Добавить аккаунт</button>`}</div></div>${accs.length?'':'<div class="empty" style="margin-top:8vh">В этом разделе пока нет аккаунтов</div>'}`+accs.map((a,i)=>`<div class="acc" style="animation-delay:${i*40}ms"><span class="num">${i+1}</span>
+    <div class="f">${a.login?`<label>Логин</label><div class="v" id="lg${a.id}">${esc(a.login)}</div>`:''}<label>${a.locked?'ПИН-код':'Пароль'}</label><div class="v pw" id="pw${a.id}">${shown.has(a.id)?esc(a.password):mask(a.password)}</div>${a.note?`<label>Заметка</label><div class="v note" data-n="${a.id}" title="Нажмите, чтобы скопировать">${esc(a.note)}</div>`:''}</div>
+    <div class="acts">${a.login?`<button class="ic" title="Копировать логин" data-c="${a.id}:login">${I.user}</button>`:''}<button class="ic" title="Копировать пароль" data-c="${a.id}:password">${I.copy}</button>
+    <button class="ic" title="Показать" data-v="${a.id}">${shown.has(a.id)?I.eye:I.eyeoff}</button>${a.locked?`<button class="ic" title="Изменить ПИН-код" data-e="${a.id}">${I.edit}</button>`:`<button class="ic" title="Изменить" data-e="${a.id}">${I.edit}</button><button class="ic del" title="Удалить" data-d="${a.id}">${I.del}</button>`}</div></div>`).join('');tr($('view'));puzzle()}
+// entrance: pieces come into focus one after another (soft fade, tiny rise, blur to sharp)
+function puzzle(){document.querySelectorAll('#view .ht,#view .hacts .btn,#view .acc,#view .empty').forEach((el,i)=>{
+  el.style.animationDelay=i*60+'ms';el.classList.add('snap')})}
+$('q').oninput=render;
+const flash=(el,back)=>{clearTimeout(el._t);clearTimeout(el._t2);el.style.transition='opacity .2s';el.style.opacity='0'; // fade out, swap text, fade in, then back
+  el._t=setTimeout(()=>{el.textContent=t('Скопировано');el.classList.add('cp2');el.style.opacity='1';
+    el._t2=setTimeout(()=>{el.style.opacity='0';el._t=setTimeout(()=>{el.textContent=back();el.classList.remove('cp2');el.style.opacity='1'},200)},1000)},200)};
+$('view').onclick=e=>{const b=e.target.closest('[data-c],[data-v],[data-e],[data-d],[data-n]');if(!b)return;const D=b.dataset,id=+(D.c?.split(':')[0]||D.v||D.e||D.d||D.n),a=data.find(x=>x.id===id);
+  if(D.n){api.copy(a.note);flash(b,()=>a.note)}
+  else if(D.c){const f=D.c.split(':')[1];api.copy(a[f],f==='password');b.classList.add('ok');setTimeout(()=>b.classList.remove('ok'),800);
+    flash($(f==='login'?'lg'+id:'pw'+id),()=>f==='login'?a.login:(shown.has(id)?a.password:mask(a.password)))}
+  else if(D.v){const on=!shown.has(id);on?shown.add(id):shown.delete(id); // touch only this card, no re-render
+    $('pw'+id).textContent=on?a.password:mask(a.password);b.innerHTML=on?I.eye:I.eyeoff}
+  else if(a.locked){}
+  else if(D.e)openM(a)
+  else ask('Удалить аккаунт?',a.login).then(ok=>{if(ok){data=data.filter(x=>x!==a);save();render()}})};
+
+// ---- modal
+function openM(a){editId=a?.id??null;$('mt').textContent=t(a?'Изменить аккаунт':'Новый аккаунт');
+  msite=a?.site??cur;$('ms').innerHTML=`${av(msite)}<div><b>${esc(msite)}</b><small>${t('Раздел')}</small></div>`;$('fl').value=a?.login??'';$('fp').value=a?.password??'';showPw(false);$('fn').value=a?.note??'';
+  show('modal');$('fl').focus()}
+$('mc').onclick=close;
+MODALS.forEach(m=>$(m).onmousedown=e=>{if(e.target===$(m))close()});
+$('gen').onclick=()=>{const cs='abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%^&*',r=crypto.getRandomValues(new Uint32Array(16));
+  $('fp').value=[...r].map(n=>cs[n%cs.length]).join('');showPw(true)};
+$('mf').onsubmit=e=>{e.preventDefault();const s=msite,o={site:s,login:$('fl').value.trim(),password:$('fp').value,note:$('fn').value.trim()};
+  if(editId!=null)Object.assign(data.find(x=>x.id===editId),o);else data.push({id:nid(),...o});
+  cur=s;save();$('modal').classList.add('hide');render();toast('Сохранено')};
+document.onkeydown=e=>{if(e.key==='Escape'){close()}};
+const PRESETS=['Google','Microsoft','Discord','Roblox','Steam','Ubisoft','Дія','Monobank','Erste','PKO Bank Polski','Telegram','Instagram','Facebook','X','GitHub','YouTube','Apple','Amazon','Netflix','Spotify','PayPal','Binance','Epic Games','PlayStation','TikTok','Twitch','Reddit','WhatsApp','mObywatel'];
+const plus=ic('<path d="M12 5v14M5 12h14"/>');
+// own icons (any .ico the user loaded) live in the app profile; icons already used by sections are imported once
+const ownGet=()=>kvGet('pm-own');
+const ownSet=l=>kvSet('pm-own',l);
+const ownAdd=(name,icon)=>{const l=ownGet();if(!l.some(x=>x.icon===icon)){l.push({name,icon});ownSet(l)}};
+const ownSync=()=>{try{if(localStorage.getItem('pm-own-sync'))return;data.forEach(x=>{if(x.icon&&x.icon.startsWith('data:'))ownAdd(x.site,x.icon)});localStorage.setItem('pm-own-sync','1')}catch{}};
+let iconQ=''; // search text: matching icons are shown straight in the grid
+const PCATS=[['Игры',['Roblox','Steam','Ubisoft','Epic Games','PlayStation','Twitch']],['Соцсети',['Discord','Telegram','Instagram','Facebook','X','TikTok','Reddit','WhatsApp','YouTube']],
+  ['Сервисы',['Google','Microsoft','Apple','Amazon','Netflix','Spotify','GitHub']],['Финансы',['Monobank','Erste','PKO Bank Polski','PayPal','Binance']],['Документы',['Дія','mObywatel']]];
+// Picker: "Мои" = own icons in user-made groups (starts empty), "Рекомендуемые" = factory icons (can be removed and restored)
+const grpGet=()=>kvGet('pm-groups');
+const grpSet=l=>kvSet('pm-groups',l);
+let ptab='own',gnew=false,gren=null; // ptab: 'own'|'rec'; gnew/gren: group being created / renamed
+const ptile=(p,sel)=>`<button type="button" class="pre${sel===p?' on':''}" data-p="${esc(p)}" title="${esc(p)}">${av(p,"")}</button>`;
+const ownTile=(o,i,sel)=>`<div class="pre${sel===o.icon?' on':''}" draggable="true" data-oi="${i}" title="${esc(o.name)}">${av('',o.icon)}<button type="button" class="x" data-xo="${i}" title="Удалить иконку">×</button></div>`;
+const gnInput=(v,id)=>`<input class="gn" ${id?`data-gid="${id}" `:''}value="${esc(v||'')}" placeholder="${t('Название группы')}" autocomplete="off">`;
+const iconsHTML=sel=>{ownSync();const q=iconQ.toLowerCase(),vis=PRESETS,groups=grpGet(),own=ownGet().map((o,i)=>[o,i]);
+  const up=`<button type="button" class="pre up" title="Своя иконка (.ico)">${plus}</button>`;
+  if(q)return own.filter(([o])=>o.name.toLowerCase().includes(q)).map(([o,i])=>ownTile(o,i,sel)).join('')+vis.filter(x=>x.toLowerCase().includes(q)).map(x=>ptile(x,sel)).join('')+up;
+  const tabs=`<div class="ftabs"><button type="button" class="ftab${ptab==='own'?' on':''}" data-ptab="own">${t('Мои')}</button><button type="button" class="ftab${ptab==='rec'?' on':''}" data-ptab="rec">${t('Рекомендуемые')}</button></div>`;
+  let body;
+  if(ptab==='rec'){
+    body=PCATS.map(([n,l])=>`<div class="fblk static"><div class="fcat"><span>${t(n)}</span></div><div class="fgrid">${l.map(x=>ptile(x,sel)).join('')}</div></div>`).join('');
+  }else{
+    const gids=groups.map(g=>g.id),pencil=ic('<path d="M4 20h4L19 9l-4-4L4 16v4z"/>');
+    body=`<div class="ownrow">${own.filter(([o])=>!gids.includes(o.cat)).map(([o,i])=>ownTile(o,i,sel)).join('')}${up}</div>`
+      +(own.length?'':`<div class="cap" style="height:auto;margin:6px 0">${t('Пока пусто. Нажмите «+», чтобы добавить свою иконку.')}</div>`)
+      +groups.map(g=>{const mine=own.filter(([o])=>o.cat===g.id);
+        return `<div class="fblk" data-c="${g.id}"><div class="fcat">${gren===g.id?gnInput(g.name,g.id):`<span>${esc(g.name)}</span><small>${mine.length}</small><button type="button" class="gi" data-gren="${g.id}" title="${t('Переименовать')}">${pencil}</button><button type="button" class="gi del" data-gd="${g.id}" title="${t('Удалить')}">${I.del}</button>`}</div><div class="fgrid">${mine.map(([o,i])=>ownTile(o,i,sel)).join('')}</div></div>`}).join('')
+      +(gnew?`<div class="grow">${gnInput('')}<button type="button" class="btn sm" data-gadd="1">OK</button></div>`:`<button type="button" class="addcat" data-gnew="1">+ ${t('Новая группа')}</button>`);
+  }
+  return `<div class="pk">${tabs}${body}</div>`};
+const commitGn=i=>{const n=i.value.trim(),l=grpGet();
+  if(n){if(i.dataset.gid){const g=l.find(x=>x.id===i.dataset.gid);if(g)g.name=n}else l.push({id:'g'+Date.now().toString(36),name:n});grpSet(l)}gnew=false;gren=null};
+// shared click rules of both pickers; returns true when the click was handled
+const pickerCommon=(e,redraw)=>{const T=e.target;let a;
+  if(a=T.closest('[data-ptab]')){ptab=a.dataset.ptab;gnew=false;gren=null;return redraw(),true}
+  if(T.closest('[data-gnew]')){gnew=true;gren=null;return redraw(),true}
+  if(a=T.closest('[data-gren]')){gren=a.dataset.gren;gnew=false;return redraw(),true}
+  if(T.closest('[data-gadd]')){const i=T.closest('.pk').querySelector('.gn');if(i)commitGn(i);return redraw(),true}
+  if(a=T.closest('[data-gd]')){const id=a.dataset.gd;grpSet(grpGet().filter(x=>x.id!==id));const l=ownGet();l.forEach(o=>{if(o.cat===id)delete o.cat});ownSet(l);return redraw(),true}
+  return false};
+// drag an own icon onto a group (or back to the top row to take it out of a group); Enter/Esc in group name fields
+const dndOwn=(host,redraw)=>{const zone=e=>e.target.closest('.fblk:not(.static),.ownrow');
+  host.ondragstart=e=>{const t=e.target.closest('[data-oi]');if(t){e.dataTransfer.setData('text/own',t.dataset.oi);e.dataTransfer.effectAllowed='move'}};
+  host.ondragover=e=>{const z=zone(e);if(z){e.preventDefault();z.classList.add('drop')}};
+  host.ondragleave=e=>{const z=zone(e);if(z&&!z.contains(e.relatedTarget))z.classList.remove('drop')};
+  host.ondragend=()=>host.querySelectorAll('.drop').forEach(z=>z.classList.remove('drop'));
+  host.ondrop=e=>{const z=zone(e),i=e.dataTransfer.getData('text/own');if(!z||i==='')return;e.preventDefault();
+    const l=ownGet();if(!l[+i])return;if(z.dataset.c)l[+i].cat=z.dataset.c;else delete l[+i].cat;ownSet(l);redraw()};
+  host.onkeydown=e=>{if(!e.target.classList.contains('gn'))return;
+    if(e.key==='Enter'){e.preventDefault();commitGn(e.target);redraw()}else if(e.key==='Escape'){e.stopPropagation();gnew=false;gren=null;redraw()}}};
+const focusGn=h=>setTimeout(()=>{const i=h.querySelector('.gn');if(i){i.focus();i.select()}},0);
+const rd1=()=>{prev();focusGn($('pl'))},rd2=()=>{drawIcoGrid();focusGn($('il'))};
+let icoCb=null;
+const loadIco=(fl,cb)=>{if(!/\.ico$/i.test(fl.name))return toast('Нужен файл .ico');const img=new Image();
+  img.onload=()=>{const c=document.createElement('canvas');c.width=c.height=96;const m=Math.min(img.width,img.height); // square crop from center
+    c.getContext('2d').drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,96,96);cb(c.toDataURL('image/png'),fl.name.replace(/\.ico$/i,''));URL.revokeObjectURL(img.src)};
+  img.onerror=()=>toast('Не удалось открыть картинку');img.src=URL.createObjectURL(fl)};
+$('sfile').onchange=e=>{const fl=e.target.files[0];e.target.value='';if(fl&&icoCb)loadIco(fl,icoCb)};
+
+// ---- new section: name + optional icon, explicit "Создать"
+let sel=null,auto=''; // sel: preset name or data URL; auto: name we filled in ourselves
+const prev=()=>{const n=$('sn').value.trim();
+  $('sp').innerHTML=sel?(PRESETS.includes(sel)?av(sel,""):av('',sel)):av(n||'?');
+  $('pl').innerHTML=iconsHTML(sel)};
+function openSec(){close();iconQ='';ptab='own';gnew=false;gren=null;sel=null;auto='';$('sfile').value='';$('sn').value='';prev();show('sec');$('sn').focus()}
+$('addSec').onclick=openSec;$('sn').oninput=prev;$('sc').onclick=close;
+const fillName=v=>{if(!$('sn').value.trim()||$('sn').value===auto)$('sn').value=auto=v};
+$('pl').onclick=e=>{if(pickerCommon(e,rd1))return;const x=e.target.closest('.x');
+  if(x){const l=ownGet();l.splice(+x.dataset.xo,1);ownSet(l);if(sel&&!PRESETS.includes(sel)&&!l.some(o=>o.icon===sel))sel=null;return prev()}
+  const b=e.target.closest('.pre');if(!b)return;
+  if(b.classList.contains('up')){icoCb=(d,name)=>{ownAdd(name,d);sel=d;fillName(name);prev()};return $('sfile').click()}
+  if(b.dataset.oi!==undefined){const o=ownGet()[+b.dataset.oi];sel=sel===o.icon?null:o.icon;if(sel)fillName(o.name);return prev()}
+  const p=b.dataset.p;sel=sel===p?null:p;if(sel)fillName(p);prev()}; // click again to unselect
+$('sf').onsubmit=e=>{e.preventDefault();const n=$('sn').value.trim(),f=data.find(x=>x.site.toLowerCase()===n.toLowerCase());
+  const it=f||{id:nid(),site:n,section:true};if(!f)data.push(it);
+  if(sel){data.forEach(x=>{if(x.site===it.site)delete x.icon});it.icon=PRESETS.includes(sel)?'brand:'+sel:sel}
+  cur=it.site;save();close();$('q').value='';render();toast('Раздел добавлен')};
+function delSec(name){if(name===DEFSEC)return;const n=data.filter(x=>x.site===name&&!x.section).length;
+  ask(t('Удалить раздел «{n}»?',{n:name}),n?t('Вместе с ним удалятся аккаунты: {n}',{n}):'В разделе нет аккаунтов').then(ok=>{if(ok){data=data.filter(x=>x.site!==name);save();render()}})}
+const ask=(title,text)=>new Promise(r=>{$('at').textContent=t(title);$('ap').textContent=t(text);show('ask');$('ay').focus();
+  const done=v=>{close();r(v)};$('ay').onclick=()=>done(true);$('an').onclick=()=>done(false);$('ask').onmousedown=e=>{if(e.target===$('ask'))done(false)}});
+// ---- change a section's icon: click a preset to apply, or load own .ico
+let editSite=null;
+function applyIcon(site,val){const it=data.find(x=>x.site===site);data.forEach(x=>{if(x.site===site)delete x.icon});if(val)it.icon=val;save();render()}
+function drawIcoGrid(){const c=icoOf(editSite);$('il').innerHTML=iconsHTML(c&&c.startsWith('brand:')?c.slice(6):c)}
+function openIco(site){if(site===DEFSEC)return;editSite=site;iconQ='';ptab='own';gnew=false;gren=null;$('it').textContent=t('Иконка раздела «{n}»',{n:site});drawIcoGrid();show('ico')}
+$('il').onclick=e=>{if(pickerCommon(e,rd2))return;const x=e.target.closest('.x');
+  if(x){const l=ownGet();l.splice(+x.dataset.xo,1);ownSet(l);return drawIcoGrid()}
+  const b=e.target.closest('.pre');if(!b)return;
+  if(b.classList.contains('up')){icoCb=(d,name)=>{ownAdd(name,d);applyIcon(editSite,d);close()};return $('sfile').click()}
+  if(b.dataset.oi!==undefined){applyIcon(editSite,ownGet()[+b.dataset.oi].icon);return close()}
+  applyIcon(editSite,'brand:'+b.dataset.p);close()};
+$('ir').onclick=()=>{applyIcon(editSite,null);close()};$('ix').onclick=close;
+
+dndOwn($('pl'),rd1);dndOwn($('il'),rd2);
+// icon pickers: search by name (matches replace the folder in the grid), hovered name shown under the grid
+document.querySelectorAll('.isq').forEach(i=>i.oninput=()=>{iconQ=i.value.trim();i.closest('#sec')?prev():drawIcoGrid()});
+const tip=document.body.appendChild(Object.assign(document.createElement('div'),{className:'tip'}));
+document.querySelectorAll('.presets').forEach(g=>{g.onmouseover=e=>{const b=e.target.closest('.pre');if(!b){tip.classList.remove('on');return}
+    if(b.title){b.dataset.tip=b.title;b.removeAttribute('title')}if(!b.dataset.tip)return;const r=b.getBoundingClientRect();
+    tip.textContent=b.dataset.tip;tip.style.left=(r.left+r.width/2)+'px';tip.style.top=(r.top-6)+'px';tip.classList.add('on')};
+  g.onmouseleave=g.onscroll=()=>tip.classList.remove('on')});
+// ---- themes
+const drawThemes=()=>{$('tl').innerHTML=Object.entries(THEMES).map(([id,th])=>`<button type="button" class="tcard${id===themeId?' on':''}" data-t="${id}" style="background:${th.v['--bg']};border-color:${th.v['--line']}"><div class="tp" style="background:${th.v['--panel']}"></div><div class="tb"><i style="background:${th.v['--acc']}"></i><span style="color:${th.v['--tx']}">${t(th.n)}</span></div></button>`).join('');
+  $('ll').innerHTML=Object.entries(LANGS).map(([k,n])=>`<button type="button" class="btn ghost sm${k===lang?' on':''}" data-l="${k}">${n}</button>`).join('')};
+$('ll').onclick=e=>{const b=e.target.closest('[data-l]');if(b){applyLang(b.dataset.l);drawThemes()}};
+$('thb').onclick=()=>{drawThemes();show('thm')};$('tx').onclick=close;
+{let tgt=1,cur=1,raf=0;const Z=$('zm'),ap=z=>{Z.style.setProperty('--p',(z-1)/.6*100+'%');tgt=z;if(!raf)raf=requestAnimationFrame(step)},step=()=>{cur+=(tgt-cur)*.3;if(Math.abs(tgt-cur)<.004)cur=tgt;if(window.chrome&&window.chrome.webview)api.zoom(cur);else{document.documentElement.style.zoom=cur;$('app').style.height=100/cur+'vh'}raf=cur===tgt?0:requestAnimationFrame(step)};
+  let z=1;try{z=Math.max(1,+localStorage.getItem('pm-zoom')||1)}catch{}Z.value=z;cur=z;ap(z);Z.oninput=()=>{z=+Z.value;ap(z);try{localStorage.setItem('pm-zoom',z)}catch{}};Z.ondblclick=()=>{Z.value=1;Z.oninput()}}
+$('tl').onclick=e=>{const b=e.target.closest('.tcard');if(!b)return;applyTheme(b.dataset.t);try{localStorage.setItem('pm-theme',themeId)}catch{};drawThemes()};
+
+// ---- Import: backup (.zip / .json), browser CSV export or a plain text list; everything is sorted into sections automatically
+const hostName=v=>{v=String(v||'').trim().replace(/^[a-z][\w+.-]*:\/\//i,'').replace(/^www\./i,'').split(/[\/?#:]/)[0];
+  if(!/^[^\s.]+(\.[^\s.]+)+$/.test(v))return '';const p=v.split('.');let i=p.length-2;if(p.length>=3&&p[p.length-1].length===2&&p[i].length<=3)i--;return p[Math.max(i,0)]};
+const cap=x=>x?x[0].toUpperCase()+x.slice(1):x;
+const siteOf=(name,url)=>{name=String(name||'').trim();const h=hostName(name)||hostName(url);return hostName(name)?cap(h):(name||cap(h))};
+const parseCsv=(txt,d)=>{const rows=[];let r=[],c='',q=false;for(let i=0;i<txt.length;i++){const ch=txt[i];
+    if(q){if(ch==='"'){if(txt[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
+    else if(ch==='"')q=true;else if(ch===d){r.push(c);c=''}else if(ch==='\n'){r.push(c.replace(/\r$/,''));rows.push(r);r=[];c=''}else c+=ch}
+  if(c||r.length){r.push(c.replace(/\r$/,''));rows.push(r)}return rows.filter(x=>x.some(v=>v.trim()))};
+const fromTable=txt=>{const first=txt.split('\n')[0],d=[',',';','\t','|'].map(x=>[x,first.split(x).length]).sort((a,b)=>b[1]-a[1])[0];
+  if(d[1]<2){const m=txt.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>l.split(/\s*[:]\s*/));return m.filter(x=>x.length>=2).map(x=>({site:'Импорт',login:x[0],password:x.slice(1).join(':'),note:''}))}
+  const rows=parseCsv(txt,d[0]),hd=rows[0].map(x=>x.trim().toLowerCase());
+  const col=re=>hd.findIndex(h=>re.test(h)),ix={pw:col(/pass|парол|hasł/),url:col(/url|uri|domain|host/),note:col(/note|comment|заметк|notat|нотат/),lg:col(/user|login|e-?mail|логин|почта/),nm:col(/^(name|title|site|website|service|сайт|название|nazwa)$/)};
+  const hasHead=ix.pw>=0&&(ix.lg>=0||ix.url>=0||ix.nm>=0);
+  if(hasHead)return rows.slice(1).map(r=>({site:siteOf(r[ix.nm],r[ix.url])||'Импорт',login:(r[ix.lg]||'').trim(),password:r[ix.pw]||'',note:(r[ix.note]||'').trim()}));
+  return rows.map(r=>r.length>=3?{site:siteOf(r[0],r[0])||'Импорт',login:r[1],password:r[2],note:r[3]||''}:{site:'Импорт',login:r[0],password:r[1]||'',note:''});};
+const fromText=txt=>{let site='',cur=null,out=[];const PL=/^(?:пароль|password|hasło)\s*:\s*(.*)$/i,NL=/^(?:заметка|note|нотатка|notatka)\s*:\s*(.*)$/i;
+  for(const raw of txt.split('\n')){const l=raw.replace(/\r$/,'');if(!l.trim())continue;let m;
+    if(m=l.match(/^\s*\d+\.\s+(.*)$/)){if(site){cur={site,login:m[1].trim()==='—'?'':m[1].trim(),password:'',note:''};out.push(cur)}}
+    else if(/^\s/.test(l)&&cur){const v=l.trim();if(m=v.match(PL))cur.password=m[1];else if(m=v.match(NL))cur.note=m[1]}
+    else if(site||!/\s—\s/.test(l)){site=l.trim();cur=null}}
+  return out.map(x=>({...x,site:cap(x.site.toLowerCase())}))};
+const parseList=txt=>{txt=txt.trim();
+  if(/^[\[{]/.test(txt)){try{let j=JSON.parse(txt);if(!Array.isArray(j))j=j.accounts||j.items||j.logins||[];
+    return j.map(x=>x.section?{site:x.site,section:true,icon:x.icon}:{site:siteOf(x.site||x.name,x.url),login:x.login||x.username||'',password:x.password||'',note:x.note||x.notes||'',icon:x.icon})}catch{}}
+  return /^\s+(?:пароль|password|hasło)\s*:/im.test(txt)?fromText(txt):fromTable(txt)};
+const okIcon=v=>typeof v==='string'&&(/^brand:[^<>"'`]{1,40}$/.test(v)||/^data:(image\/[\w.+-]+|application\/octet-stream);base64,[A-Za-z0-9+/=]+$/.test(v)); // icons from a file: built-in brand names or inline images only
+const backupTxt=arr=>{const m=Object.create(null);arr.filter(x=>!x.section).forEach(x=>(m[x.site]??=[]).push(x));
+  const body=Object.keys(m).sort((a,b)=>a.localeCompare(b,'ru')).map(s=>s.toUpperCase()+'\r\n'+m[s].map((x,n)=>(n+1)+'. '+(x.login||'—')+'\r\n   '+t('Пароль')+': '+x.password+(x.note?'\r\n   '+t('Заметка')+': '+x.note:'')).join('\r\n')+'\r\n').join('\r\n');
+  return t('Мои пароли')+' — '+new Date().toLocaleDateString(lang)+'\r\n\r\n'+body};
+const mergeImport=rows=>{const key=a=>[a.site,a.login,a.password].join('\u0001').toLowerCase();const have=new Set(data.filter(x=>!x.section).map(key));
+  const known=Object.create(null);data.forEach(x=>known[x.site.toLowerCase()]=x.site);let add=0,skip=0,uid=nid();
+  for(const r of rows){const site=known[String(r.site).toLowerCase()]||r.site;if(!site)continue;
+    if(r.section){if(!known[site.toLowerCase()]){known[site.toLowerCase()]=site;data.push({id:uid++,site,section:true,...(okIcon(r.icon)?{icon:r.icon}:{})})}continue}
+    if(!r.login&&!r.password)continue;const a={id:uid++,site,login:r.login,password:r.password,note:r.note||''};
+    if(have.has(key(a))){skip++;continue}have.add(key(a));known[site.toLowerCase()]=site;if(okIcon(r.icon)&&!data.some(x=>x.site===site&&x.icon))a.icon=r.icon;data.push(a);add++}
+  return[add,skip]};
+const doImport=async(path='',pw='')=>{const r=await api.imp(path,pw);if(!r||r.cancel)return;
+  if(r.e)return toast(t('Не удалось открыть файл')+': '+r.e);
+  if(r.need){$('ipi').value='';$('ipf').dataset.path=r.path;$('ipt').textContent=t(r.bad?'Неверный пароль, ещё раз':'Пароль архива');show('ipw');return $('ipi').focus()}
+  const rows=parseList(r.text||'');const[a,k]=mergeImport(rows);
+  if(a)save();render();wtCard(a?'Импорт завершён':'Нечего импортировать',t('Добавлено')+': '+a+(k?' · '+t('пропущено дублей')+': '+k:''),'')};
+$('cpc').onclick=close;
+$('cpf').onsubmit=async e=>{e.preventDefault();const v=$('cpi').value;if(v.length<12){$('cpi').value='';return toast('Нужно от 12 символов')}
+  if(weakPw(v)){$('cpi').value='';return toast('Слишком простой пароль')}
+  if(!await api.rekey(v,pack()))return toast('Не удалось сменить пароль'); // the old password stays valid unless the file was rewritten
+  close();toast('Мастер-пароль изменён')};
+$('imp').onclick=()=>doImport();
+window.__drop=p=>{if(!$('app').classList.contains('hide')&&p)doImport(p)}; // file dropped on the window: only while the vault is open
+$('aboutb').onclick=()=>show('abt');$('cpl').onclick=e=>{e.preventDefault();close();$('cpi').value='';$('cpi').type='password';$('cpi').nextElementSibling.innerHTML=I.eyeoff;show('cpw');$('cpi').focus()};$('abx').onclick=close;
+$('ipc').onclick=close;
+$('ipf').onsubmit=e=>{e.preventDefault();const pw=$('ipi').value,path=$('ipf').dataset.path;close();doImport(path,pw)};
+// ---- Backup
+$('pdf').onclick=()=>{if(!data.some(x=>!x.section&&!x.locked))return toast('Нечего экспортировать');$('pwi').value='';show('pw');$('pwi').focus()};
+$('pwc').onclick=close;
+$('pwf').onsubmit=e=>{e.preventDefault();const v=$('pwi').value;if(v.length<12)return toast('Нужно от 12 символов');if(weakPw(v))return toast('Слишком простой пароль');close();doPdf(v)};
+const doPdf=async pw=>{const pad=n=>String(n).padStart(2,'0'),d0=new Date(),fname='passwords-'+d0.getFullYear()+'-'+pad(d0.getMonth()+1)+'-'+pad(d0.getDate())+'_'+pad(d0.getHours())+'-'+pad(d0.getMinutes())+'-'+pad(d0.getSeconds());
+  const out=backupTxt(data);
+  const js=JSON.stringify(data.map(({site,login,password,note,section,icon})=>({site,...(section?{section:true}:{login,password,note:note||''}),...(icon?{icon}:{})})));
+  const r=await api.pdf({t:out,j:js},fname,pw),path=r&&r.p;
+  if(path){wtCard('Бэкап сохранён. Перенесите файл с этого компьютера: здесь его могут взять',path,path)}else{toast(t('Не удалось сохранить бэкап')+(r&&r.e?': '+r.e:''))}};
+</script></body></html>
