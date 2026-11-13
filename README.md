@@ -37,7 +37,10 @@ Tests: `cargo test` and `node tests/import.test.js`.
 
 ## Security notes
 
-- The master password protects the vault file. It does not protect against someone who can replace the program itself or read memory files (`hiberfil.sys`, pagefile) from your disk. Disk encryption is the only defence against that.
+- The master password protects the vault file. It does not protect against someone who can replace the program itself or read memory files (`hiberfil.sys`, pagefile) from your disk. Disk encryption is the only defence against that, so turn on **BitLocker**:
+  1. Windows 11 Pro: Start → type "BitLocker" → **Manage BitLocker** → **Turn on BitLocker** for the system drive (C:). On many PCs it is also under Settings → Privacy & security → **Device encryption**.
+  2. Save the recovery key somewhere **off this PC** (Microsoft account, a USB stick or paper). Without it a locked disk cannot be recovered.
+  3. Optional: `powercfg /h off` in an administrator terminal disables hibernation, so no copy of memory is written to `hiberfil.sys`.
 - The page has a strict Content-Security-Policy and cannot make any network request.
 
 ## License
