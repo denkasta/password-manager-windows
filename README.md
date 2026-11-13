@@ -37,7 +37,7 @@ Tests: `cargo test` and `node tests/import.test.js`.
 
 ## Security notes
 
-- The master password protects the vault file. It does not protect against someone who can replace the program itself or read memory files (`hiberfil.sys`, pagefile) from your disk. Turn on **BitLocker** (with a boot PIN) and, if you want, `powercfg /h off` to disable hibernation.
+- The master password protects the vault file. It does not protect against someone who can replace the program itself or read memory files (`hiberfil.sys`, pagefile) from your disk. Disk encryption is the only defence against that.
 - The page has a strict Content-Security-Policy and cannot make any network request.
 
 ## License
