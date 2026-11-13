@@ -328,6 +328,8 @@ fn run() -> R<()> {
                     let pw = m["w"].as_str().unwrap_or("").to_string();
                     std::thread::spawn(move || reply(&p, id, import(path, pw)));
                 }
+                // only opens Windows' own BitLocker page: the user turns it on there (nothing is changed by this program)
+                Some("bitlocker") => { let _ = Command::new("control").args(["/name", "Microsoft.BitLockerDriveEncryption"]).spawn(); }
                 Some("reveal") => { let _ = Command::new("explorer").arg(format!("/select,{}", m["a"].as_str().unwrap_or(""))).spawn(); }
                 _ => {}
             }
